@@ -1,0 +1,8 @@
+# Build intermediates — regenerate with build/build.sh
+__pycache__/
+build/venv/
+build/raw/
+build/*_simp.geojson
+build/linked.json
+build/unmatched.json
+build/village_points.json

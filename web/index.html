@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Uko Wapi? — Tanzania location finder</title>
+<meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo. One tap to find your region, district, ward and village in Tanzania.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Uko wapi hasa?</h1>
+    <p class="sub">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.
+      <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
+  </header>
+
+  <button id="locate" class="primary">
+    <span class="pin" aria-hidden="true"></span>
+    <span>Nipate mahali nilipo <small>Locate me</small></span>
+  </button>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <section id="result" hidden>
+    <div id="map"></div>
+
+    <div id="warn" class="warn" hidden></div>
+
+    <dl class="fields">
+      <div class="row"><dt>Mkoa <small>Region</small></dt><dd id="f-region">—</dd></div>
+      <div class="row"><dt>Wilaya <small>District</small></dt><dd id="f-district">—</dd></div>
+      <div class="row"><dt>Kata / Shehia <small>Ward</small></dt><dd id="f-ward">—</dd></div>
+      <div class="row village">
+        <dt><label for="f-village">Kijiji / Mtaa <small>Village / Street</small></label></dt>
+        <dd><select id="f-village"></select>
+            <p class="hint" id="v-note"></p></dd>
+      </div>
+    </dl>
+
+    <div class="actions">
+      <button id="copy" class="ghost">Nakili taarifa <small>Copy</small></button>
+      <button id="again" class="ghost">Pima tena <small>Retry</small></button>
+    </div>
+
+    <details id="alts" hidden>
+      <summary>Kata jirani <small>Nearby wards</small></summary>
+      <div id="alts-body"></div>
+    </details>
+
+    <p class="coords" id="coords"></p>
+  </section>
+
+  <section id="manual-wrap">
+    <details id="manual">
+      <summary>Au chagua mwenyewe <small>Or choose manually</small></summary>
+      <div class="manual-body">
+        <p class="hint">Bila GPS — kama uko ndani, umekataa ruhusa, au unajaza kwa niaba ya mtu mwingine.
+          <span class="en">No GPS needed — for indoors, denied permission, or filling in for someone else.</span></p>
+        <label>Mkoa <small>Region</small><select id="m-region"></select></label>
+        <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
+        <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
+        <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
+        <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <details class="srcinfo">
+    <summary>Chanzo cha taarifa na maelezo muhimu
+      <small>Data sources &amp; disclaimer</small></summary>
+
+    <dl class="src">
+      <dt>Orodha ya maeneo</dt>
+      <dd>Mikoa, wilaya, kata/shehia na vijiji/mitaa hutoka kwenye orodha ya
+        <code>data.json</code> — mikoa <strong>30</strong>, wilaya <strong>169</strong>,
+        kata <strong>3,641</strong>, vijiji/mitaa <strong>16,408</strong>.
+        <span class="en">Administrative list of Tanzania down to village/mtaa level.</span></dd>
+
+      <dt>Mipaka ya kata</dt>
+      <dd><a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a>
+        ADM3, iliyotokana na <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+        (leseni ODbL 1.0). Hii ndiyo hutumika kujua kata uliyopo.
+        Kata <strong id="cov">—</strong> zina ramani.
+        <span class="en">Ward polygons — the layer that decides which ward you are in.</span></dd>
+
+      <dt>Vituo vya vijiji / mitaa</dt>
+      <dd>Vidokezo vya OpenStreetMap (ODbL 1.0). Vijiji/mitaa <strong id="cov-v">—</strong>
+        vina kituo, hivyo tunaweza kukisia kilicho karibu nawe.
+        <span class="en">Village points, used only to guess the closest one.</span></dd>
+
+      <dt>Ramani</dt>
+      <dd>Tiles za OpenStreetMap.</dd>
+    </dl>
+
+    <div class="disclaimer">
+      <p><strong>Tafadhali soma hili.</strong></p>
+      <ul>
+        <li>Mkoa, wilaya na kata hupatikana kwa mipaka rasmi ya ramani.
+          <strong>Kijiji/mtaa ni makadirio</strong> — hakuna mipaka ya vijiji iliyochapishwa
+          popote, hivyo lazima uhakiki mwenyewe.</li>
+        <li>GPS ya simu ina hitilafu ya mita 5–50, na huwa mbaya zaidi ndani ya majengo.
+          Ukiwa karibu na mpaka wa kata, jibu linaweza kuwa si sahihi.</li>
+        <li>Mipaka hii ilitoka OpenStreetMap mwaka 2015. Kata zilizogawanywa au
+          kubadilishwa jina baada ya hapo huenda zisipatikane.</li>
+        <li>Ukurasa huu <strong>si uthibitisho rasmi wa makazi</strong>. Hauna
+          uthibitisho wa utambulisho, na mtu yeyote anaweza kupata jibu lolote.
+          Ni msaada wa kujaza fomu tu.</li>
+        <li>Taarifa yako ya GPS <strong>haitoki kwenye simu yako</strong> — hakuna
+          seva, hakuna akaunti, hakuna kumbukumbu inayohifadhiwa.</li>
+      </ul>
+      <p class="en">Region, district and ward come from official boundary data; the
+        village/mtaa is a best guess you must confirm. Phone GPS is accurate to
+        5–50&nbsp;m at best, boundaries date from a 2015 OpenStreetMap snapshot, and this
+        page performs no identity check — it is a form-filling aid, not proof of
+        residence. Nothing you do here leaves your device.</p>
+    </div>
+    </details>
+
+    <p class="credit">Si uthibitisho rasmi wa makazi — ni msaada wa kujaza fomu.
+      Mipaka: geoBoundaries / OpenStreetMap (ODbL 1.0).</p>
+  </footer>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="geo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
