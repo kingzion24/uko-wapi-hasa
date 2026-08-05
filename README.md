@@ -13,6 +13,8 @@ people typing the wrong thing into forms.
 No login, no backend, no accounts. Everything runs in the browser and no
 location data leaves the phone.
 
+Live at **https://ukowapi.site**
+
 ## Run it
 
 ```bash
