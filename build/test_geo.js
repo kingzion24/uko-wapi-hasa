@@ -68,6 +68,10 @@ const CASES = [
   ['Iringa town',               -7.7700, 35.6900, 'Iringa'],
   ['Sumbawanga',                -7.9667, 31.6167, 'Rukwa'],
   ['Bukoba',                    -1.3316, 31.8121, 'Kagera'],
+  // Songwe region was created in 2016 by splitting Mbeya. The 2015 boundaries
+  // do not know it exists, so these must not come back as Mbeya.
+  ['Vwawa, Songwe',             -9.1000, 32.9333, 'Songwe'],
+  ['Tunduma, Songwe',           -9.3000, 32.7667, 'Songwe'],
 ];
 
 let pass = 0, fail = 0;
@@ -80,6 +84,7 @@ for (const [name, lat, lng, want] of CASES) {
   const ok = r.region === want;
   ok ? pass++ : fail++;
   const edge = r.ward.g ? Math.round(distToBoundary(lng, lat, r.ward.g)) : '?';
+  const src = r.ward.s || '?';
   const g = guessVillage(r.ward, lng, lat);
   const located = (r.ward.c || []).filter(Boolean).length;
   console.log(
@@ -87,7 +92,7 @@ for (const [name, lat, lng, want] of CASES) {
     (g ? `${g.name} (${fmtDist(g.d)})` : '[no village coords]')
   );
   console.log(`         ${r.ward.v.length} villages, ${located} located, ${edge}m to ward edge, ` +
-              `${r.exact ? 'exact' : 'NEAREST'}, ${ms.toFixed(0)}ms`);
+              `src=${src}, ${r.exact ? 'exact' : 'NEAREST'}, ${ms.toFixed(0)}ms`);
   if (!ok) console.log(`       expected region ${want}`);
 }
 

@@ -130,6 +130,14 @@ function fillVillages(sel, ward, lng, lat) {
     .sort((a, b) => a.d - b.d);
   const rest = items.filter((x) => !x.c).sort((a, b) => a.name.localeCompare(b.name));
 
+  // Wards from a region data.json does not cover (Songwe) have no village list.
+  if (!items.length) {
+    sel.add(new Option('— hatuna orodha ya vijiji —', ''));
+    sel.disabled = true;
+    return null;
+  }
+  sel.disabled = false;
+
   if (!known.length) {
     if (items.length > 1) sel.add(new Option(`— chagua kati ya ${items.length} —`, ''));
     rest.forEach((x) => sel.add(new Option(x.name, x.name)));
@@ -170,12 +178,30 @@ async function render(res, lat, lng, acc) {
   $('f-ward').textContent = w.w;
 
   const guess = fillVillages($('f-village'), w, lng, lat);
-  $('v-note').innerHTML = guess
-    ? `Tumekisia <strong>${guess.name}</strong> — kituo chake kiko ${fmtDist(guess.d)} kutoka ulipo.
-       Badilisha kama si sahihi.
-       <span class="en">Best guess by distance — change it if that's not right.</span>`
-    : `Hatuna ramani ya vijiji vya kata hii. Chagua chako kwenye orodha.
-       <span class="en">No village coordinates for this ward — pick yours from the list.</span>`;
+  if (guess) {
+    $('v-note').innerHTML = `Tumekisia <strong>${guess.name}</strong> — kituo chake kiko
+      ${fmtDist(guess.d)} kutoka ulipo. Badilisha kama si sahihi.
+      <span class="en">Best guess by distance — change it if that's not right.</span>`;
+  } else if (!w.v.length) {
+    $('v-note').innerHTML = `Orodha yetu ya vijiji haijumuishi kata hii bado, hivyo jaza
+      kijiji/mtaa mwenyewe kwenye fomu yako.
+      <span class="en">Our village list does not cover this ward yet — fill the
+      village/mtaa in yourself.</span>`;
+  } else {
+    $('v-note').innerHTML = `Hatuna ramani ya vijiji vya kata hii. Chagua chako kwenye orodha.
+      <span class="en">No village coordinates for this ward — pick yours from the list.</span>`;
+  }
+
+  // Say which boundary set answered, and how old it is.
+  const year = w.s === '2015' ? 2015 : 2018;
+  const age = new Date().getFullYear() - year;
+  $('src-note').innerHTML = w.s === '2018'
+    ? `Mipaka ya kata: Ofisi ya Taifa ya Takwimu (NBS), mwaka 2018 — miaka ${age} iliyopita.
+       ${w.p ? `Msimbo rasmi: <strong>${w.p}</strong>.` : ''}
+       <span class="en">Ward boundary from the 2018 national statistics dataset.</span>`
+    : `Mipaka ya kata hii ni ya OpenStreetMap mwaka 2015 — miaka ${age} iliyopita, kwa sababu
+       haipatikani kwenye seti ya 2018. Hakiki kama kata yako iligawanywa hivi karibuni.
+       <span class="en">This ward falls back to the older 2015 boundary.</span>`;
 
   const note = $('v-note').innerHTML;
   $('f-village').onchange = (e) => {

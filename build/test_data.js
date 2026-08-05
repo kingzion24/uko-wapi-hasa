@@ -34,15 +34,19 @@ for (const e of index) {
     if (!inD.length) bad(`${e.slug}/${d}: no wards`);
     for (const w of inD) {
       if (!w.w) bad(`${e.slug}/${d}: ward with no name`);
-      if (!w.v || !w.v.length) bad(`${e.slug}/${d}/${w.w}: no villages`);
+      // Wards added from a region data.json does not cover have no villages.
+      if (!w.v) bad(`${e.slug}/${d}/${w.w}: missing village array`);
+      if (w.v.length === 0 && w.s !== '2018') bad(`${e.slug}/${d}/${w.w}: no villages and not a 2018-only ward`);
       if (new Set(w.v).size !== w.v.length) bad(`${e.slug}/${d}/${w.w}: duplicate villages`);
       for (const v of w.v) got.add([file.region, w.d, w.w, v].join('|'));
       if (w.g && !w.b) bad(`${e.slug}/${d}/${w.w}: geometry without bbox`);
+      if (w.g && !['2018', '2015'].includes(w.s)) bad(`${e.slug}/${d}/${w.w}: geometry without a source tag`);
       if (w.g && !['Polygon', 'MultiPolygon'].includes(w.g.type)) bad(`${w.w}: bad geometry type`);
     }
   }
 }
 
+// Wards with no villages contribute no rows, so they cannot be in `want`.
 const missing = [...want].filter((k) => !got.has(k));
 const extra = [...got].filter((k) => !want.has(k));
 console.log('round-trip data.json -> web/data');

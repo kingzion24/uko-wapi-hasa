@@ -35,7 +35,7 @@ jobs:
           test -f web/data/index.json
           test -f web/data/regions.json
           echo "region files: $(ls web/data/wards | wc -l)"
-          test "$(ls web/data/wards | wc -l)" -eq 30
+          test "$(ls web/data/wards | wc -l)" -eq 31
 
       - name: Data integrity (web/data round-trips data.json)
         run: node build/test_data.js

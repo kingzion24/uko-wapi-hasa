@@ -4,5 +4,6 @@ build/venv/
 build/raw/
 build/*_simp.geojson
 build/linked.json
+build/linked_2018.json
 build/unmatched.json
 build/village_points.json

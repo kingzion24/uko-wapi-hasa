@@ -25,16 +25,26 @@ RAW = ROOT / "build" / "raw"
 
 WARD_SCORE_MIN = 88
 
-# Region names that differ between data.json and geoBoundaries ADM1.
+# Three sources name the regions differently: data.json ("Dar es Salaam
+# Region", Swahili Zanzibar names), geoBoundaries gbOpen (English Zanzibar
+# names) and the 2018 NBS/OCHA shapefile ("Dar-es-salaam", Swahili Zanzibar
+# names). Fold all of them onto one canonical key.
 REGION_ALIASES = {
+    # data.json suffixes
     "dar es salaam region": "dar es salaam",
     "mtwara region": "mtwara",
     "pwani region": "pwani",
-    "kaskazini pemba": "north pemba",
-    "kusini pemba": "south pemba",
-    "kaskazini unguja": "zanzibar north",
-    "kusini unguja": "zanzibar south central",
-    "mjini magharibi": "zanzibar urban west",
+    "coast": "pwani",
+    # geoBoundaries English names for Zanzibar -> Swahili canonical
+    "north pemba": "kaskazini pemba",
+    "pemba north": "kaskazini pemba",
+    "south pemba": "kusini pemba",
+    "pemba south": "kusini pemba",
+    "zanzibar north": "kaskazini unguja",
+    "zanzibar south central": "kusini unguja",
+    "zanzibar central south": "kusini unguja",
+    "zanzibar urban west": "mjini magharibi",
+    "zanzibar west": "mjini magharibi",
 }
 
 # Suffixes that appear in data.json but not in geoBoundaries ward names.

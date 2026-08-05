@@ -21,7 +21,7 @@ done
 if [ ! -x build/venv/bin/python ]; then
   echo "==> creating venv"
   python3 -m venv build/venv
-  build/venv/bin/pip install --quiet shapely rapidfuzz
+  build/venv/bin/pip install --quiet shapely rapidfuzz pyshp
 fi
 
 echo "==> linking ward polygons to data.json names"
@@ -59,9 +59,25 @@ fetch_overpass "$RAW/osm_places.json" /tmp/q_places.txt
 fetch_overpass "$RAW/osm_areas.json"  /tmp/q_areas.txt
 fetch_overpass "$RAW/osm_admin.json"  /tmp/q_admin.txt
 
+echo "==> fetching 2018 NBS/OCHA boundaries (primary source)"
+for L in adm1 adm3; do
+  Z="$RAW/tza_${L}_2018.zip"
+  if [ ! -s "$Z" ]; then
+    U=$(curl -sSL --max-time 120 "https://data.humdata.org/api/3/action/package_show?id=cod-ab-tza" \
+        | python3 -c "import sys,json;print(next(r['url'] for r in json.load(sys.stdin)['result']['resources'] if r['name']=='tza_admbnda_${L}_20181019.zip'))")
+    curl -sSL --max-time 600 "$U" -o "$Z"
+  fi
+  unzip -oq "$Z" -d "$RAW/${L}_2018"
+done
+
 echo "==> simplifying polygons"
 npx -y mapshaper "$RAW/tza_adm3.geojson" -simplify 6% keep-shapes -o build/adm3_simp.geojson force
 npx -y mapshaper "$RAW/tza_ADM1.geojson" -simplify 4% keep-shapes -o build/adm1_simp.geojson force
+npx -y mapshaper "$RAW/adm3_2018/tza_admbnda_adm3_20181019.shp" -simplify 6% keep-shapes -o build/adm3_2018_simp.geojson force
+npx -y mapshaper "$RAW/adm1_2018/tza_admbnda_adm1_20181019.shp" -simplify 4% keep-shapes -o build/adm1_2018_simp.geojson force
+
+echo "==> linking 2018 ward polygons to data.json"
+(cd build && ../build/venv/bin/python link2018.py)
 
 echo "==> locating villages from OSM"
 (cd build && ../build/venv/bin/python villages.py)

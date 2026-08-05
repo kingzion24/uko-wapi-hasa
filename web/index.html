@@ -66,10 +66,7 @@
       </div>
     </dl>
 
-    <p class="hint agehint">Mipaka ya kata inayotumika ni ya mwaka 2015
-      (miaka <span class="bnd-age">—</span> iliyopita), hivyo kata mpya au
-      zilizogawanywa baada ya hapo huenda zisionekane.
-      <span class="en">Ward boundaries date from 2015.</span></p>
+    <p class="hint agehint" id="src-note"></p>
 
     <div class="actions">
       <button id="copy" class="ghost">Nakili taarifa <small>Copy</small></button>
@@ -112,17 +109,18 @@
         <span class="en">Administrative list of Tanzania down to village/mtaa level.</span></dd>
 
       <dt>Mipaka ya kata</dt>
-      <dd><a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a>
-        ADM3, iliyotokana na <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-        (leseni ODbL 1.0). Hii ndiyo hutumika kujua kata uliyopo.
+      <dd>Kwanza <strong>Ofisi ya Taifa ya Takwimu (NBS) / UN OCHA, mwaka 2018</strong>
+        (<a href="https://data.humdata.org/dataset/cod-ab-tza" target="_blank" rel="noopener">HDX</a>,
+        leseni CC BY-IGO) — hii ina misimbo rasmi ya kata na inajumuisha mkoa wa Songwe.
+        Pale kata haipatikani hapo, tunatumia
+        <a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a>
+        / <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+        ya mwaka 2015 (ODbL 1.0).
         Kata <strong id="cov">—</strong> zina ramani.
-        <br><strong class="age">Mipaka hii inawakilisha mgawanyo wa mwaka 2015 —
-        takribani miaka <span class="bnd-age">—</span> iliyopita.</strong>
-        Nakala ya OpenStreetMap ilisasishwa Januari 2023, lakini bado inaonyesha
-        mgawanyo uleule wa 2015.
-        <span class="en">Ward polygons represent the 2015 division of Tanzania. The
-          OpenStreetMap extract was refreshed in 2023, but it still describes the
-          same 2015 boundaries.</span></dd>
+        <br><strong class="age">Hata seti mpya ni ya mwaka 2018 — takribani miaka
+        <span class="bnd-age">—</span> iliyopita.</strong>
+        <span class="en">Ward polygons come from the 2018 national statistics dataset,
+          falling back to a 2015 OpenStreetMap set where a ward is missing.</span></dd>
 
       <dt>Vituo vya vijiji / mitaa</dt>
       <dd>Vidokezo vya OpenStreetMap (ODbL 1.0). Vijiji/mitaa <strong id="cov-v">—</strong>
@@ -141,11 +139,14 @@
           popote, hivyo lazima uhakiki mwenyewe.</li>
         <li>GPS ya simu ina hitilafu ya mita 5–50, na huwa mbaya zaidi ndani ya majengo.
           Ukiwa karibu na mpaka wa kata, jibu linaweza kuwa si sahihi.</li>
-        <li><strong>Mipaka ya kata ni ya mwaka 2015 — takribani miaka
-          <span class="bnd-age">—</span> iliyopita.</strong> Tanzania imeongeza na
-          kugawanya kata nyingi tangu wakati huo. Kata mpya, zilizogawanywa au
-          kubadilishwa jina baada ya 2015 huenda zisipatikane hapa, na kama uko
-          kwenye eneo lililogawanywa upya jibu linaweza kuwa la zamani.</li>
+        <li><strong>Mipaka mipya tuliyonayo ni ya mwaka 2018 — takribani miaka
+          <span class="bnd-age">—</span> iliyopita</strong> (chache ni za 2015).
+          Hakuna mipaka ya sensa ya 2022 iliyochapishwa wazi. Kata zilizoanzishwa au
+          kugawanywa baada ya 2018 huenda zikaonyesha kata ya zamani, na ukurasa
+          hauwezi kutambua hilo.</li>
+        <li>Orodha yetu ya vijiji (<code>data.json</code>) ni ya kabla ya 2016 — haina
+          mkoa wa Songwe. Tumeongeza kata 64 za Songwe kutoka NBS ili mkoa uwe sahihi,
+          lakini kata hizo hazina orodha ya vijiji.</li>
         <li>Ukurasa huu <strong>si uthibitisho rasmi wa makazi</strong>. Hauna
           uthibitisho wa utambulisho, na mtu yeyote anaweza kupata jibu lolote.
           Ni msaada wa kujaza fomu tu.</li>

@@ -25,7 +25,9 @@ NAME_SCORE_MIN = 90
 def main():
     rows = json.loads((ROOT / "data.json").read_text())
     linked = json.loads((ROOT / "build" / "linked.json").read_text())
+    linked18 = json.loads((ROOT / "build" / "linked_2018.json").read_text())
     adm3 = json.loads((ROOT / "build" / "adm3_simp.geojson").read_text())["features"]
+    adm3_18 = json.loads((ROOT / "build" / "adm3_2018_simp.geojson").read_text())["features"]
     # Rural villages are mapped as place=* nodes; urban mitaa are more often
     # areas (place=subward/neighbourhood) or low-level admin boundaries, so all
     # three sources are merged and reduced to a single representative point.
@@ -49,14 +51,23 @@ def main():
         if all(str(r[k]).strip() for k in r):
             villages[(r["Region"], r["District"], r["Ward_Shehia"])].append(r["Village_Mtaa"])
 
-    # ward polygons, keyed to their data.json identity
-    geom_by_id = {f["properties"]["shapeID"]: f["geometry"] for f in adm3}
-    geoms, keys = [], []
+    # Ward polygons keyed to their data.json identity, using the same hybrid the
+    # app ships: 2018 where available, 2015 otherwise. Assigning place nodes with
+    # different polygons than the ones we serve would misplace villages.
+    by_key = {}
+    g15 = {f["properties"]["shapeID"]: f["geometry"] for f in adm3}
+    g18 = {f["properties"]["ADM3_PCODE"]: f["geometry"] for f in adm3_18}
     for rec in linked:
-        g = geom_by_id.get(rec["shapeID"])
-        if not g:
-            continue
-        key = (rec["region"], rec["district"], rec["ward"])
+        g = g15.get(rec["shapeID"])
+        if g:
+            by_key.setdefault((rec["region"], rec["district"], rec["ward"]), g)
+    for rec in linked18:                       # 2018 wins where present
+        g = g18.get(rec["pcode"])
+        if g:
+            by_key[(rec["region"], rec["district"], rec["ward"])] = g
+
+    geoms, keys = [], []
+    for key, g in by_key.items():
         if key not in villages:
             continue
         geoms.append(shape(g))

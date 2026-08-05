@@ -3,7 +3,8 @@
 
 `data.json` is a list of Tanzania's administrative units down to village/street
 level: **30 regions → 169 districts → 3,641 wards/shehia → 16,408
-villages/mitaa**.
+villages/mitaa**. The app serves **31 regions and 3,705 wards**, having carried in
+Songwe from a newer official source — see below.
 
 `web/` is a small static site built on top of it. You tap one button, it reads
 your GPS, and it tells you which region, district and ward you are in, then
@@ -44,9 +45,17 @@ lives in `web/`.
 
 ## How the lookup works
 
-`data.json` has no coordinates, so ward boundary polygons come from
-[geoBoundaries](https://www.geoboundaries.org/) ADM3 (sourced from
-OpenStreetMap). The build joins those polygons to the names in `data.json`.
+`data.json` has no coordinates, so ward boundary polygons come from two sources,
+joined to its names at build time:
+
+| Source | Year | Licence | Used for |
+|---|---|---|---|
+| Tanzania NBS / UN OCHA ([HDX COD-AB](https://data.humdata.org/dataset/cod-ab-tza)) | 2018 | CC BY-IGO | primary — 3,587 wards |
+| [geoBoundaries](https://www.geoboundaries.org/) ADM3 (OpenStreetMap) | 2015 | ODbL 1.0 | fallback — 73 wards |
+
+The 2018 set carries official P-codes and full ADM1/2/3 names, so those wards are
+matched on their hierarchy rather than by deriving parents spatially. Where a
+ward is missing from it, the 2015 polygon fills in.
 
 At runtime the browser loads:
 
@@ -89,10 +98,11 @@ preselects it. You can always override it.
 
 The app is explicit about uncertainty:
 
-- **3,583 of 3,641 wards (98.4%) have a polygon.** The remaining 58 are wards
-  renamed or split after 2015 (see below). If your point falls in one, the app
-  shows the nearest ward and says so.
-- **8,647 of 16,408 villages (52.7%) have a coordinate**, and coverage is very
+- **3,660 of 3,705 wards (98.8%) have a polygon.** If your point falls in one of
+  the remaining 45, the app shows the nearest ward and says so.
+- Each result states **which boundary set answered and how old it is**, plus the
+  official P-code when the 2018 source was used.
+- **8,632 of 16,408 villages (52.6%) have a coordinate**, and coverage is very
   uneven — see below. Where a ward has none, the app says so and just shows the
   list.
 - If the GPS accuracy radius is wider than your distance to the ward boundary,
@@ -100,32 +110,31 @@ The app is explicit about uncertainty:
 - A manual region → district → ward → village picker covers denied permission,
   being indoors, desktop use, or filling a form for someone else.
 
-### The ward boundaries are from 2015
+### The boundaries are still not current, and `data.json` is older still
 
-This is the biggest limitation in the project, and the app says so on screen.
-geoBoundaries reports:
+No 2022 census ward boundaries are published under an open licence. The newest
+available anywhere is the **2018** NBS/OCHA set, which is what this now uses.
 
-```
-boundaryYearRepresented   2015          the division the polygons describe
-sourceDataUpdateDate      Jan 2023      when the OSM extract was refreshed
-buildDate                 Dec 2023      when geoBoundaries built the release
-```
+The bigger problem is `data.json` itself. It lists **30 regions and no Songwe** —
+a region created in January 2016 — which dates the ward list to 2015. That is why
+swapping wholesale to the 2018 boundaries actually *lowered* name-match coverage
+(98.4% → 96.8%): the two 2015-era datasets agree with each other more than either
+agrees with 2018. Hence the hybrid.
 
-The 2023 dates are easy to misread as freshness. They are not: the extract was
-re-cut in 2023, but it still describes Tanzania **as it was divided in 2015**.
+Consequences to be aware of:
 
-Tanzania has created and subdivided a great many wards since — which is exactly
-why 47 of the 3,644 polygons matched no current ward name, and why 58 wards in
-`data.json` have no polygon at all. Where a ward has been split since 2015, the
-app can return the old parent ward rather than the new one, and it has no way to
-detect that. The on-page note and the disclaimer both state the 2015 date, with
-the age computed at runtime so it cannot quietly go stale.
+- **Songwe is fixed.** Its 64 wards are carried in from the 2018 source, so
+  someone there is told Songwe rather than the pre-2016 answer of Mbeya. Those
+  wards have no village list, and the app says so.
+- **Wards split after 2018 still resolve to their old parent**, silently. There is
+  no missing-polygon signal to warn on — it looks like a clean hit. This is the
+  one failure mode the app cannot detect.
+- 42 of the 3,643 2018 polygons matched no `data.json` ward and are dropped;
+  45 wards have no polygon from either source.
 
-Fixing this properly means a newer boundary source — the 2022 census ward
-shapefiles from the National Bureau of Statistics are the obvious candidate, but
-they are not published under an open licence in the same convenient form.
-`build/link.py` would take a new source with only its region/district
-reconciliation changed.
+To go further, `data.json` needs replacing with a post-2022 ward list, not just
+the boundaries. `build/link2018.py` matches on region/district/ward names, so a
+newer list would slot in with only its reconciliation table changed.
 
 ### Village coverage is worst where it matters most
 
@@ -155,13 +164,15 @@ anyone can produce any result. Don't treat its output as evidence.
 bash build/build.sh
 ```
 
-Downloads geoBoundaries ADM1/2/3, joins them to `data.json`, simplifies the
-polygons with mapshaper, writes `web/data/`, and runs the tests. Needs
+Downloads both boundary sets and the OSM place data, joins them to `data.json`,
+simplifies the polygons with mapshaper, writes `web/data/`, and runs the tests.
+Needs
 `python3`, `node`/`npx` and `curl`.
 
 | Script                 | Does                                                   |
 | ---------------------- | ------------------------------------------------------ |
-| `build/link.py`      | Joins ward polygons to`data.json` names              |
+| `build/link.py`      | Joins the 2015 OSM ward polygons to`data.json` names |
+| `build/link2018.py`  | Joins the 2018 NBS polygons; carries in new regions    |
 | `build/villages.py`  | Gives villages/mitaa a coordinate from OSM             |
 | `build/web_data.py`  | Splits into per-region files for the web app           |
 | `build/test_geo.js`  | Resolves 16 known towns + rejects Nairobi              |
@@ -207,7 +218,15 @@ analytics use [GoatCounter](https://www.goatcounter.com/) (free, cookieless).
 
 ## Attribution
 
-Ward boundaries: [geoBoundaries](https://www.geoboundaries.org/) ADM3, derived
-from OpenStreetMap, licensed **ODbL 1.0** — if you redistribute or build on
-`web/data/`, that licence and its attribution requirement come with it.
-Map tiles: OpenStreetMap.
+Ward boundaries, primary: **Tanzania National Bureau of Statistics / UN OCHA
+ROSA**, via [HDX](https://data.humdata.org/dataset/cod-ab-tza), licensed
+**CC BY-IGO** (attribution).
+
+Ward boundaries, fallback: [geoBoundaries](https://www.geoboundaries.org/) ADM3,
+derived from OpenStreetMap, licensed **ODbL 1.0** (attribution + share-alike).
+
+Village points: OpenStreetMap, **ODbL 1.0**. Map tiles: OpenStreetMap.
+
+`web/data/` is a derivative of all of the above, so redistributing it carries
+both licences and their attribution requirements. Both are credited in the site
+footer, not only here.
