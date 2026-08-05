@@ -123,6 +123,9 @@ footer p { margin: .35rem 0; }
 .srcinfo > summary { font-size: .82rem; color: var(--ink); }
 .srcinfo > .src { margin-top: .9rem; }
 .credit { margin-top: .8rem; text-align: center; line-height: 1.5; }
+.visits { margin-top: 1rem; text-align: center; }
+.visits strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.visits small { display: inline; margin-left: .3rem; }
 footer a { color: inherit; }
 footer code { font-size: .95em; background: var(--card);
   border: 1px solid var(--line); border-radius: 4px; padding: 0 .25rem; }

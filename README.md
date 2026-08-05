@@ -127,6 +127,24 @@ Result: 3,597 of 3,644 polygons linked (3,496 exact, 101 fuzzy).
 One row of `data.json` (`Mara / Musoma / <blank> / Mikuyu`) has a blank ward and
 is dropped at build time, so it cannot become an empty form field.
 
+## Visitor counter
+
+The footer shows a page-view count from
+[abacus](https://abacus.jasoncameron.dev) (namespace `uko-wapi-hasa`, key
+`visits`) — a free, no-signup counter, since the site has no backend of its own.
+
+- It counts **once per browser session** (`sessionStorage`), not once per reload.
+- It sends **only a page view**. Coordinates never leave the browser, and the
+  footer disclaimer says so explicitly.
+- If the service is down or the visitor is offline, the counter **stays hidden**
+  rather than showing a broken number.
+- To swap services, change `COUNTER_HOST` / `COUNTER_NS` / `COUNTER_KEY` at the
+  top of the counter section in `web/app.js`. Nothing else depends on it.
+
+These free counters do disappear — `counterapi.dev` was returning database
+errors while this was being built. Treat the number as decorative. For real
+analytics use [GoatCounter](https://www.goatcounter.com/) (free, cookieless).
+
 ## Attribution
 
 Ward boundaries: [geoBoundaries](https://www.geoboundaries.org/) ADM3, derived

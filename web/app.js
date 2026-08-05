@@ -317,6 +317,33 @@ async function initManual() {
   ].join('\n'));
 }
 
+/* ---------- visitor counter ----------
+ * Hosted by a free third-party service, since the site has no backend. It only
+ * ever sees a page view — never coordinates. Counts once per browser session,
+ * and stays hidden if the service is unreachable rather than showing a broken
+ * number. Swap COUNTER_* if the service disappears; nothing else depends on it. */
+
+const COUNTER_HOST = 'https://abacus.jasoncameron.dev';
+const COUNTER_NS = 'uko-wapi-hasa';
+const COUNTER_KEY = 'visits';
+
+async function showVisits() {
+  let first = true;
+  try {
+    first = !sessionStorage.getItem('counted');
+  } catch { /* private mode: just read, don't count */ first = false; }
+
+  try {
+    const res = await fetch(`${COUNTER_HOST}/${first ? 'hit' : 'get'}/${COUNTER_NS}/${COUNTER_KEY}`);
+    if (!res.ok) return;
+    const { value } = await res.json();
+    if (typeof value !== 'number') return;
+    if (first) { try { sessionStorage.setItem('counted', '1'); } catch { /* ignore */ } }
+    $('visits-n').textContent = value.toLocaleString('en-US');
+    $('visits').hidden = false;
+  } catch { /* offline or service down — leave the counter hidden */ }
+}
+
 /* ---------- misc ---------- */
 
 async function copy(btn, text) {
@@ -341,6 +368,8 @@ getIndex().then((idx) => {
   $('cov-v').textContent = pct(sum('located'), sum('villages'));
   return initManual();
 }).catch((e) => console.error(e));
+
+showVisits();
 
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
