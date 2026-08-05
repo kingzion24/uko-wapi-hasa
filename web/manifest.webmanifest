@@ -1,0 +1,20 @@
+{
+  "name": "Uko Wapi Hasa?",
+  "short_name": "Uko Wapi",
+  "description": "Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo.",
+  "lang": "sw",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f7f9",
+  "theme_color": "#1f7a4d",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

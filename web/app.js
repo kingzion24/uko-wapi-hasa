@@ -194,7 +194,15 @@ async function render(res, lat, lng, acc) {
   const warn = $('warn');
   const alts = res.exact ? await nearbyWards(lng, lat, res.slug, w, Math.max(acc, 100)) : [];
 
-  if (!res.exact) {
+  if (acc > 1500) {
+    // Typically wifi/IP positioning on a laptop rather than a real GPS fix.
+    warn.hidden = false;
+    warn.innerHTML = `<strong>Kifaa chako hakikupata GPS halisi.</strong>
+      Usahihi ni ±${(acc / 1000).toFixed(1)} km, hivyo kata iliyoonyeshwa inaweza kuwa si sahihi kabisa.
+      Tumia simu ukiwa nje, au chagua mwenyewe hapa chini.
+      <span class="en">Accuracy is ±${(acc / 1000).toFixed(1)} km — this is a network estimate,
+      not a GPS fix. Verify before using.</span>`;
+  } else if (!res.exact) {
     warn.hidden = false;
     warn.innerHTML = `<strong>Hatuna uhakika kamili.</strong>
       Hakuna mpaka wa kata unaokuzunguka hapa — tumekuonyesha kata iliyo karibu zaidi
@@ -230,6 +238,16 @@ async function render(res, lat, lng, acc) {
 function setStatus(msg, isError) {
   $('status').textContent = msg;
   $('status').classList.toggle('error', !!isError);
+}
+
+/* A device with no geolocation API at all can only use the manual picker, so
+ * lead with that instead of offering a button that cannot work. */
+function adaptToDevice() {
+  if (navigator.geolocation) return;
+  $('locate').hidden = true;
+  $('desk-note').hidden = true;
+  setStatus('Kivinjari chako hakiruhusu GPS. Chagua mahali pako mwenyewe hapa chini.', true);
+  $('manual').open = true;
 }
 
 async function locate() {
@@ -369,6 +387,7 @@ getIndex().then((idx) => {
   return initManual();
 }).catch((e) => console.error(e));
 
+adaptToDevice();
 showVisits();
 
 if ('serviceWorker' in navigator) {

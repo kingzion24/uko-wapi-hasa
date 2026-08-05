@@ -1,7 +1,8 @@
 /* Offline support: ward data is immutable per release, so cache it forever.
  * The app shell is network-first so updates land without a hard refresh. */
-const CACHE = 'ukowapi-v1';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'data/index.json'];
+const CACHE = 'ukowapi-v2';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'geo.js',
+               'manifest.webmanifest', 'icon.svg', 'data/index.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

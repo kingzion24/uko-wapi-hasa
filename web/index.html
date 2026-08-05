@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Uko Wapi? — Tanzania location finder</title>
 <meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo. One tap to find your region, district, ward and village in Tanzania.">
+<meta name="theme-color" content="#1f7a4d" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101317" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Uko Wapi">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -16,12 +23,22 @@
       <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
   </header>
 
+  <p class="visits" id="visits" hidden>
+    <span class="dot" aria-hidden="true"></span>
+    Wageni waliotembelea: <strong id="visits-n">—</strong>
+    <small>visitors</small></p>
+
   <button id="locate" class="primary">
     <span class="pin" aria-hidden="true"></span>
     <span>Nipate mahali nilipo <small>Locate me</small></span>
   </button>
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <p class="desk-note hint" id="desk-note">Kwenye kompyuta GPS hukisiwa kwa mtandao, hivyo
+    inaweza kukosea kwa kilomita kadhaa. Kwa usahihi zaidi tumia simu, au chagua mwenyewe hapa chini.
+    <span class="en">On a computer, location is estimated from the network and can be off by
+      kilometres — use a phone, or pick manually below.</span></p>
 
   <section id="result" hidden>
     <div id="map"></div>
@@ -125,10 +142,6 @@
         coordinates.</p>
     </div>
     </details>
-
-    <p class="visits" id="visits" hidden>
-      Wageni waliotembelea: <strong id="visits-n">—</strong>
-      <small>visitors</small></p>
 
     <p class="credit">Si uthibitisho rasmi wa makazi — ni msaada wa kujaza fomu.
       Mipaka: geoBoundaries / OpenStreetMap (ODbL 1.0).</p>

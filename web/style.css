@@ -116,6 +116,52 @@ summary small { display: inline; margin-left: .35rem; }
 .coords { color: var(--muted); font-size: .78rem; margin-top: .8rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+/* ---------- device adaptation ---------- */
+
+/* Touch devices: bigger hit areas, and iOS won't zoom a >=16px select on focus. */
+@media (pointer: coarse) {
+  .primary { padding: 1.15rem; font-size: 1.1rem; }
+  .ghost { padding: .85rem .9rem; min-height: 44px; }
+  select { padding: .7rem .6rem; font-size: 16px; min-height: 44px; }
+  summary { padding: .2rem 0; }
+  #alts-body button { min-height: 44px; }
+}
+
+/* Narrow phones: labels above values instead of a cramped two-column grid. */
+@media (max-width: 24rem) {
+  main { padding: 1rem .75rem 2.5rem; }
+  h1 { font-size: 1.35rem; }
+  .row { grid-template-columns: 1fr; gap: .3rem; }
+  .actions { flex-direction: column; }
+}
+
+/* Roomier screens: wider column and a taller map. */
+@media (min-width: 40rem) {
+  main { max-width: 40rem; padding: 2rem 1.5rem 3rem; }
+  #map { height: 320px; }
+  .row { grid-template-columns: 11rem 1fr; }
+}
+
+/* Short landscape (phone on its side): don't let the map eat the viewport. */
+@media (max-height: 30rem) and (orientation: landscape) {
+  #map { height: 45vh; min-height: 140px; }
+}
+
+/* Fine pointer with a big screen: it's a desktop, so hint that GPS is coarse. */
+.desk-note { display: none; }
+@media (pointer: fine) and (min-width: 48rem) {
+  .desk-note { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+@media print {
+  .primary, .actions, #map, #manual-wrap, .visits, footer { display: none; }
+  body { background: #fff; color: #000; }
+}
+
 footer { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
   color: var(--muted); font-size: .78rem; }
 footer p { margin: .35rem 0; }
@@ -123,9 +169,20 @@ footer p { margin: .35rem 0; }
 .srcinfo > summary { font-size: .82rem; color: var(--ink); }
 .srcinfo > .src { margin-top: .9rem; }
 .credit { margin-top: .8rem; text-align: center; line-height: 1.5; }
-.visits { margin-top: 1rem; text-align: center; }
+/* Sits above the locate button: a quiet pill, not a headline. */
+.visits {
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  margin: 0 auto .8rem; width: fit-content; padding: .3rem .75rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  color: var(--muted); font-size: .78rem;
+}
 .visits strong { color: var(--ink); font-variant-numeric: tabular-nums; }
-.visits small { display: inline; margin-left: .3rem; }
+.visits small { display: inline; opacity: .65; }
+.visits .dot {
+  width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand);
+  flex: none; animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 footer a { color: inherit; }
 footer code { font-size: .95em; background: var(--card);
   border: 1px solid var(--line); border-radius: 4px; padding: 0 .25rem; }
