@@ -398,6 +398,31 @@ function showBoundaryAge() {
   return age;
 }
 
+/* Per-region data-quality disclosure. Which wards were split after 2018 is
+ * unknowable from what we have, so this reports what IS measurable: wards
+ * falling back to the older 2015 boundaries, wards with no boundary at all, and
+ * wards carried in without a village list. */
+function showQuality(idx) {
+  const rows = idx
+    .map((e) => ({ ...e, bad: e.old + e.nogeo + e.novill }))
+    .filter((e) => e.bad)
+    .sort((a, b) => b.bad - a.bad);
+  const box = $('qtable');
+  if (!rows.length) { box.textContent = '—'; return; }
+
+  box.innerHTML = '';
+  for (const e of rows) {
+    const bits = [];
+    if (e.old) bits.push(`<span class="q-old">${e.old} kata: mipaka ya 2015</span>`);
+    if (e.nogeo) bits.push(`<span class="q-nogeo">${e.nogeo} kata: hakuna mipaka</span>`);
+    if (e.novill) bits.push(`<span class="q-novill">${e.novill} kata: hakuna vijiji</span>`);
+    const row = document.createElement('div');
+    row.className = 'qrow';
+    row.innerHTML = `<span class="qname">${e.region}</span><span class="qbits">${bits.join(' · ')}</span>`;
+    box.append(row);
+  }
+}
+
 /* ---------- misc ---------- */
 
 async function copy(btn, text) {
@@ -420,6 +445,7 @@ getIndex().then((idx) => {
   const pct = (a, b) => `${a.toLocaleString()} / ${b.toLocaleString()} (${Math.round((100 * a) / b)}%)`;
   $('cov').textContent = pct(sum('mapped'), sum('wards'));
   $('cov-v').textContent = pct(sum('located'), sum('villages'));
+  showQuality(idx);
   return initManual();
 }).catch((e) => console.error(e));
 

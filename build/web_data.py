@@ -164,6 +164,10 @@ def main():
             "region": region, "slug": slug,
             "wards": len(out),
             "mapped": sum(1 for e in out if "g" in e),
+            # Per-region data-quality signals, disclosed in the page footer.
+            "old": sum(1 for e in out if e.get("s") == "2015"),   # 2015 fallback
+            "nogeo": sum(1 for e in out if "g" not in e),          # no polygon
+            "novill": sum(1 for e in out if not e["v"]),           # no village list
             "villages": sum(len(e["v"]) for e in out),
             "located": sum(sum(1 for c in e.get("c", []) if c) for e in out),
             "bbox": [round(v, PRECISION) for v in rbox] if rbox else None,
