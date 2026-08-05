@@ -90,8 +90,8 @@ preselects it. You can always override it.
 The app is explicit about uncertainty:
 
 - **3,583 of 3,641 wards (98.4%) have a polygon.** The remaining 58 are wards
-  renamed or split after the 2015 OSM boundary snapshot. If your point falls in
-  one, the app shows the nearest ward and says so.
+  renamed or split after 2015 (see below). If your point falls in one, the app
+  shows the nearest ward and says so.
 - **8,647 of 16,408 villages (52.7%) have a coordinate**, and coverage is very
   uneven — see below. Where a ward has none, the app says so and just shows the
   list.
@@ -99,6 +99,33 @@ The app is explicit about uncertainty:
   it warns you and lists the neighbouring wards so you can correct it.
 - A manual region → district → ward → village picker covers denied permission,
   being indoors, desktop use, or filling a form for someone else.
+
+### The ward boundaries are from 2015
+
+This is the biggest limitation in the project, and the app says so on screen.
+geoBoundaries reports:
+
+```
+boundaryYearRepresented   2015          the division the polygons describe
+sourceDataUpdateDate      Jan 2023      when the OSM extract was refreshed
+buildDate                 Dec 2023      when geoBoundaries built the release
+```
+
+The 2023 dates are easy to misread as freshness. They are not: the extract was
+re-cut in 2023, but it still describes Tanzania **as it was divided in 2015**.
+
+Tanzania has created and subdivided a great many wards since — which is exactly
+why 47 of the 3,644 polygons matched no current ward name, and why 58 wards in
+`data.json` have no polygon at all. Where a ward has been split since 2015, the
+app can return the old parent ward rather than the new one, and it has no way to
+detect that. The on-page note and the disclaimer both state the 2015 date, with
+the age computed at runtime so it cannot quietly go stale.
+
+Fixing this properly means a newer boundary source — the 2022 census ward
+shapefiles from the National Bureau of Statistics are the obvious candidate, but
+they are not published under an open licence in the same convenient form.
+`build/link.py` would take a new source with only its region/district
+reconciliation changed.
 
 ### Village coverage is worst where it matters most
 

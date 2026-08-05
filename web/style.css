@@ -87,7 +87,9 @@ select {
 }
 .hint { color: var(--muted); font-size: .8rem; margin: .4rem 0 0; font-weight: 400; }
 
+.agehint { margin-top: .7rem; }
 .actions { display: flex; gap: .6rem; margin-top: .9rem; }
+.src .age { color: var(--ink); display: inline-block; margin-top: .25rem; }
 
 .warn {
   background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);

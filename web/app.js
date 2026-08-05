@@ -362,6 +362,16 @@ async function showVisits() {
   } catch { /* offline or service down — leave the counter hidden */ }
 }
 
+/* The ward polygons describe Tanzania's 2015 division. Render the age rather
+ * than hard-coding it, so the page cannot quietly understate how old it is. */
+const BOUNDARY_YEAR = 2015;
+
+function showBoundaryAge() {
+  const age = new Date().getFullYear() - BOUNDARY_YEAR;
+  document.querySelectorAll('.bnd-age').forEach((el) => { el.textContent = age; });
+  return age;
+}
+
 /* ---------- misc ---------- */
 
 async function copy(btn, text) {
@@ -387,6 +397,7 @@ getIndex().then((idx) => {
   return initManual();
 }).catch((e) => console.error(e));
 
+showBoundaryAge();
 adaptToDevice();
 showVisits();
 
