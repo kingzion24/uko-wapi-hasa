@@ -225,7 +225,7 @@ async function render(res, lat, lng, acc) {
     warn.hidden = false;
     warn.innerHTML = `<strong>Kifaa chako hakikupata GPS halisi.</strong>
       Usahihi ni ±${(acc / 1000).toFixed(1)} km, hivyo kata iliyoonyeshwa inaweza kuwa si sahihi kabisa.
-      Tumia simu ukiwa nje, au chagua mwenyewe hapa chini.
+      Tumia simu ukiwa nje kwa usahihi zaidi.
       <span class="en">Accuracy is ±${(acc / 1000).toFixed(1)} km — this is a network estimate,
       not a GPS fix. Verify before using.</span>`;
   } else if (!res.exact) {
@@ -272,13 +272,15 @@ function adaptToDevice() {
   if (navigator.geolocation) return;
   $('locate').hidden = true;
   $('desk-note').hidden = true;
-  setStatus('Kivinjari chako hakiruhusu GPS. Chagua mahali pako mwenyewe hapa chini.', true);
-  $('manual').open = true;
+  setStatus('Kivinjari chako hakiruhusu GPS.', true);
+  revealManual(`Kivinjari chako hakina huduma ya GPS, hivyo huwezi kupimwa kiotomatiki.
+    Chagua mahali pako hapa chini.
+    <span class="en">Your browser has no geolocation support — choose your location below.</span>`);
 }
 
 async function locate() {
   const btn = $('locate');
-  if (!navigator.geolocation) return setStatus('Kifaa chako hakina GPS. Tumia "chagua mwenyewe" hapa chini.', true);
+  if (!navigator.geolocation) return adaptToDevice();
 
   btn.disabled = true;
   btn.classList.add('busy');
@@ -291,10 +293,19 @@ async function locate() {
         setStatus('Inalinganisha na mipaka ya kata…');
         const res = await resolve(lng, lat);
         if (!res) {
-          setStatus('Mahali hapa hapako ndani ya Tanzania. Tumia "chagua mwenyewe".', true);
+          setStatus('Mahali hapa hapako ndani ya Tanzania.', true);
+          revealManual(`Hatukuweza kukuweka ndani ya mipaka ya Tanzania. Chagua mahali pako hapa chini.
+            <span class="en">Your position did not fall inside Tanzania — choose your location below.</span>`);
         } else {
           await render(res, lat, lng, acc);
           setStatus('');
+          // A fix this coarse is a network estimate, not GPS; offer the picker
+          // alongside the result rather than leaving a shaky answer to stand.
+          if (acc > 1500) {
+            revealManual(`GPS yako ilikuwa na hitilafu ya ±${(acc / 1000).toFixed(1)} km, hivyo jibu
+              lililo juu linaweza kukosea. Ukijua mahali pako, chagua hapa chini.
+              <span class="en">That fix was too coarse to trust — set your location manually if you know it.</span>`);
+          }
         }
       } catch (e) {
         setStatus('Imeshindikana kupakua data ya kata. Angalia intaneti yako.', true);
@@ -308,17 +319,50 @@ async function locate() {
       btn.disabled = false;
       btn.classList.remove('busy');
       const msg = {
-        1: 'Umekataa ruhusa ya GPS. Ruhusu kwenye mipangilio ya kivinjari, au chagua mwenyewe hapa chini.',
+        1: 'Umekataa ruhusa ya GPS.',
         2: 'Mahali hapapatikani. Jaribu nje ya jengo.',
         3: 'Muda umeisha. Jaribu tena.',
       }[err.code] || 'Hitilafu ya GPS.';
       setStatus(msg, true);
+      const why = {
+        1: `Umekataa ruhusa ya GPS. Unaweza kuiruhusu kwenye mipangilio ya kivinjari na kubonyeza
+            tena, au chagua mahali pako hapa chini.
+            <span class="en">Location permission was denied — allow it and retry, or choose below.</span>`,
+        2: `Hatukuweza kupata mahali ulipo — mara nyingi hii hutokea ukiwa ndani ya jengo.
+            Jaribu tena ukiwa nje, au chagua mahali pako hapa chini.
+            <span class="en">Position unavailable, often indoors — retry outside, or choose below.</span>`,
+        3: `Muda wa kutafuta GPS umeisha. Jaribu tena, au chagua mahali pako hapa chini.
+            <span class="en">The location request timed out — retry, or choose below.</span>`,
+      }[err.code] || `Kuna hitilafu ya GPS. Chagua mahali pako hapa chini.
+            <span class="en">Something went wrong with GPS — choose your location below.</span>`;
+      revealManual(why);
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
 }
 
-/* ---------- manual picker ---------- */
+/* ---------- manual picker (fallback only) ----------
+ * The point of the site is that it tells you where you are, so this stays out
+ * of sight until the GPS path cannot deliver that. Built on first reveal, so a
+ * visitor whose GPS works never pays for it. */
+
+let manualReady = false;
+
+async function revealManual(why) {
+  const wrap = $('manual-wrap');
+  $('manual-why').innerHTML = why;
+  if (!manualReady) {
+    try {
+      await initManual();
+      manualReady = true;
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+  }
+  wrap.hidden = false;
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 async function initManual() {
   const idx = await getIndex();
@@ -446,7 +490,6 @@ getIndex().then((idx) => {
   $('cov').textContent = pct(sum('mapped'), sum('wards'));
   $('cov-v').textContent = pct(sum('located'), sum('villages'));
   showQuality(idx);
-  return initManual();
 }).catch((e) => console.error(e));
 
 showBoundaryAge();

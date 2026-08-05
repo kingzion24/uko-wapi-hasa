@@ -80,8 +80,8 @@ installable to a home screen.
   any fix worse than 1.5 km warns that it is a network estimate, not GPS —
   laptops routinely report ±5 km over wifi, which would otherwise produce a
   confident but wrong ward.
-- **No geolocation API** hides the button and opens the manual picker instead
-  of offering something that cannot work.
+- **No geolocation API** hides the button and reveals the manual fallback
+  instead of offering something that cannot work.
 - Honours `prefers-reduced-motion`; printing hides the map and buttons.
 
 ## Accuracy, and what this is not
@@ -107,8 +107,14 @@ The app is explicit about uncertainty:
   list.
 - If the GPS accuracy radius is wider than your distance to the ward boundary,
   it warns you and lists the neighbouring wards so you can correct it.
-- A manual region → district → ward → village picker covers denied permission,
-  being indoors, desktop use, or filling a form for someone else.
+- A manual region → district → ward → village picker exists, but **only as a
+  fallback**: it stays hidden until GPS is refused, fails, times out, returns a
+  fix coarser than 1.5 km, or lands outside Tanzania. The whole point is that
+  the site tells you where you are, so offering a manual path as a peer option
+  would invite the guessing this is meant to replace — but leaving a
+  GPS-denied visitor with a dead page would just lose them. Its dropdowns
+  cascade, so even a manual choice cannot produce an invalid
+  region/district/ward combination.
 
 ### The boundaries are still not current, and `data.json` is older still
 

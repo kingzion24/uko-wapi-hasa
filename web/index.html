@@ -46,9 +46,9 @@
   <p id="status" class="status" role="status" aria-live="polite"></p>
 
   <p class="desk-note hint" id="desk-note">Kwenye kompyuta GPS hukisiwa kwa mtandao, hivyo
-    inaweza kukosea kwa kilomita kadhaa. Kwa usahihi zaidi tumia simu, au chagua mwenyewe hapa chini.
+    inaweza kukosea kwa kilomita kadhaa. Kwa usahihi zaidi tumia simu.
     <span class="en">On a computer, location is estimated from the network and can be off by
-      kilometres — use a phone, or pick manually below.</span></p>
+      kilometres — use a phone for an accurate result.</span></p>
 
   <section id="result" hidden>
     <div id="map"></div>
@@ -81,19 +81,18 @@
     <p class="coords" id="coords"></p>
   </section>
 
-  <section id="manual-wrap">
-    <details id="manual">
-      <summary>Au chagua mwenyewe <small>Or choose manually</small></summary>
-      <div class="manual-body">
-        <p class="hint">Bila GPS — kama uko ndani, umekataa ruhusa, au unajaza kwa niaba ya mtu mwingine.
-          <span class="en">No GPS needed — for indoors, denied permission, or filling in for someone else.</span></p>
-        <label>Mkoa <small>Region</small><select id="m-region"></select></label>
-        <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
-        <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
-        <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
-        <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
-      </div>
-    </details>
+  <!-- Fallback only. Stays hidden unless GPS is refused, fails, or returns
+       something too coarse to trust; revealed by revealManual() in app.js. -->
+  <section id="manual-wrap" hidden>
+    <div class="manual-body">
+      <h2 class="manual-title">Chagua mahali pako <small>Choose your location</small></h2>
+      <p class="hint" id="manual-why"></p>
+      <label>Mkoa <small>Region</small><select id="m-region"></select></label>
+      <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
+      <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
+      <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
+      <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
+    </div>
   </section>
 
   <footer>

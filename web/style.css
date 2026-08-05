@@ -101,7 +101,14 @@ details { background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); padding: .75rem .9rem; margin-top: 1rem; }
 summary { cursor: pointer; font-weight: 600; }
 summary small { display: inline; margin-left: .35rem; }
-.manual-body { display: grid; gap: .8rem; margin-top: .9rem; }
+.manual-body {
+  display: grid; gap: .8rem;
+  background: var(--card); border: 1px solid var(--warn-line);
+  border-radius: var(--radius); padding: 1rem;
+}
+.manual-title { font-size: 1.05rem; margin: 0; color: var(--ink); }
+.manual-title small { display: inline; margin-left: .4rem; }
+#manual-wrap[hidden] { display: none; }
 .manual-body label { font-weight: 600; font-size: .85rem; color: var(--muted); display: grid; gap: .3rem; }
 .manual-body button { margin-top: .2rem; }
 
