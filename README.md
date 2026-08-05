@@ -6,9 +6,9 @@ level: **30 regions → 169 districts → 3,641 wards/shehia → 16,408
 villages/mitaa**.
 
 `web/` is a small static site built on top of it. You tap one button, it reads
-your GPS, and it tells you which region, district and ward you are in — then
-gives you a dropdown of that ward's villages to pick from. The point is to stop
-people typing the wrong thing into forms.
+your GPS, and it tells you which region, district and ward you are in, then
+names the closest village/mtaa for you to confirm. The point is to stop people
+typing the wrong thing into forms.
 
 No login, no backend, no accounts. Everything runs in the browser and no
 location data leaves the phone.
@@ -22,9 +22,25 @@ cd web && python3 -m http.server 8777
 # open http://localhost:8777
 ```
 
-Geolocation needs `localhost` or HTTPS — it will not work over plain `http://`
-on a LAN address. Deploy `web/` to any static host (GitHub Pages, Netlify,
-Cloudflare Pages); there is nothing to configure.
+Geolocation needs `localhost` or HTTPS — it will **not** work over plain
+`http://` on a LAN address, so testing from a phone means deploying first.
+
+## Deployment
+
+Pushing to `master` publishes the site:
+`.github/workflows/deploy.yml` runs the test suite, then uploads `web/` to
+GitHub Pages. Nothing is rebuilt in CI — `web/data/` is committed, and the
+workflow only verifies that what is committed is self-consistent.
+
+The heavy rebuild (geoBoundaries + Overpass downloads) is a local task; see
+[Rebuilding the data](#rebuilding-the-data).
+
+Custom domain: `web/CNAME` holds `ukowapi.site`. It must live in `web/`, since
+that directory is what gets uploaded as the Pages artifact — a CNAME at the
+repo root would never be published. Pages must be set to
+**Settings → Pages → Source: GitHub Actions**; the "deploy from a branch"
+option cannot work here, because it only offers `/` or `/docs` and the site
+lives in `web/`.
 
 ## How the lookup works
 
@@ -36,13 +52,28 @@ At runtime the browser loads:
 
 | File                         | Size                     | When             |
 | ---------------------------- | ------------------------ | ---------------- |
-| `data/index.json`          | 3 KB                     | on page load     |
+| `data/index.json`          | 4 KB                     | on page load     |
 | `data/regions.json`        | 93 KB                    | on first locate  |
-| `data/wards/<region>.json` | 82 KB median, 152 KB max | only your region |
+| `data/wards/<region>.json` | 88 KB median, 165 KB max | only your region |
 
-So a visitor downloads roughly 180 KB, not the 47 MB of raw boundary data.
+So a visitor downloads roughly 185 KB, not the 47 MB of raw boundary data.
 Point-in-polygon resolution takes 1–4 ms. A service worker caches everything,
-so it works offline after the first visit.
+so it works offline after the first visit, and a web manifest makes it
+installable to a home screen.
+
+## Device handling
+
+- **Touch devices** get 44 px minimum hit areas, and selects use a 16 px font
+  so iOS Safari does not zoom the page when one is focused.
+- **Narrow phones** stack field labels above values; wider screens get a
+  roomier column and a taller map; short landscape screens cap the map height.
+- **Desktops** are told that location there is estimated from the network, and
+  any fix worse than 1.5 km warns that it is a network estimate, not GPS —
+  laptops routinely report ±5 km over wifi, which would otherwise produce a
+  confident but wrong ward.
+- **No geolocation API** hides the button and opens the manual picker instead
+  of offering something that cannot work.
+- Honours `prefers-reduced-motion`; printing hides the map and buttons.
 
 ## Accuracy, and what this is not
 
