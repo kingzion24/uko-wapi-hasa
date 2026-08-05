@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+# web/data/ is committed, so deployment is a plain static upload. The heavy
+# rebuild (geoBoundaries + Overpass downloads) stays a local task run via
+# build/build.sh — CI only verifies that what is committed is self-consistent.
+
+on:
+  push:
+    branches: [master]
+    paths: ['web/**', 'build/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish; queue at most one more.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check the site's data is present
+        run: |
+          test -f web/index.html
+          test -f web/data/index.json
+          test -f web/data/regions.json
+          echo "region files: $(ls web/data/wards | wc -l)"
+          test "$(ls web/data/wards | wc -l)" -eq 30
+
+      - name: Data integrity (web/data round-trips data.json)
+        run: node build/test_data.js
+
+      - name: Geometry (known coordinates resolve to the right ward)
+        run: node build/test_geo.js
+
+      - name: Syntax check
+        run: |
+          node --check web/app.js
+          node --check web/geo.js
+          node --check web/sw.js
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4
