@@ -166,16 +166,20 @@ function statement() {
     `Wilaya: ${current.district}`,
     `Kata/Shehia: ${current.ward}`,
     `Kijiji/Mtaa: ${v || '(hujachagua)'}`,
+    ...(current.pc ? [`Msimbo wa posta: ${current.pc}`] : []),
   ].join('\n');
 }
 
 async function render(res, lat, lng, acc) {
   const w = res.ward;
-  current = { region: res.region, district: w.d, ward: w.w };
+  current = { region: res.region, district: w.d, ward: w.w, pc: w.pc };
 
   $('f-region').textContent = res.region;
   $('f-district').textContent = w.d;
   $('f-ward').textContent = w.w;
+  $('f-postcode').innerHTML = w.pc
+    ? `${w.pc} <small>tanzaniapostcode.com — hakiki kama ni muhimu kisheria</small>`
+    : `<span class="none">hatuna kwa kata hii <small>not in our source</small></span>`;
 
   const guess = fillVillages($('f-village'), w, lng, lat);
   if (guess) {
@@ -197,8 +201,10 @@ async function render(res, lat, lng, acc) {
   const age = new Date().getFullYear() - year;
   $('src-note').innerHTML = w.s === '2018'
     ? `Mipaka ya kata: Ofisi ya Taifa ya Takwimu (NBS), mwaka 2018 — miaka ${age} iliyopita.
-       ${w.p ? `Msimbo rasmi: <strong>${w.p}</strong>.` : ''}
-       <span class="en">Ward boundary from the 2018 national statistics dataset.</span>`
+       ${w.p ? `Msimbo wa kata wa takwimu (P-code): <strong>${w.p}</strong> —
+         <strong>huu si msimbo wa posta.</strong>` : ''}
+       <span class="en">Ward boundary from the 2018 national statistics dataset. The
+         P-code is a statistical identifier, not a postcode.</span>`
     : `Mipaka ya kata hii ni ya OpenStreetMap mwaka 2015 — miaka ${age} iliyopita, kwa sababu
        haipatikani kwenye seti ya 2018. Hakiki kama kata yako iligawanywa hivi karibuni.
        <span class="en">This ward falls back to the older 2015 boundary.</span>`;
@@ -217,6 +223,7 @@ async function render(res, lat, lng, acc) {
     `accuracy: ±${Math.round(acc)} m`,
     `match:    ${res.exact ? 'inside polygon' : `nearest ward, ${Math.round(res.dist || 0)} m away`}`,
     `boundary: ${w.s || 'none'}${w.p ? ` (pcode ${w.p})` : ''}`,
+    `postcode: ${w.pc || 'none'}`,
     `villages: ${w.v.length} listed, ${(w.c || []).filter(Boolean).length} located`,
   ].join('\n');
   $('report').href = 'mailto:mdendutevin@gmail.com'
@@ -509,6 +516,7 @@ getIndex().then((idx) => {
   const pct = (a, b) => `${a.toLocaleString()} / ${b.toLocaleString()} (${Math.round((100 * a) / b)}%)`;
   $('cov').textContent = pct(sum('mapped'), sum('wards'));
   $('cov-v').textContent = pct(sum('located'), sum('villages'));
+  $('cov-pc').textContent = pct(sum('pc'), sum('wards'));
   showQuality(idx);
 }).catch((e) => console.error(e));
 

@@ -82,6 +82,15 @@ echo "==> linking 2018 ward polygons to data.json"
 echo "==> locating villages from OSM"
 (cd build && ../build/venv/bin/python villages.py)
 
+echo "==> fetching postcode sitemap (tanzaniapostcode.com)"
+mkdir -p "$RAW/tpc"
+for f in root.xml listing_part1.xml.gz listing_part2.xml.gz; do
+  [ -s "$RAW/tpc/$f" ] || curl -sSL --max-time 180 "https://www.tanzaniapostcode.com/xml/$f" -o "$RAW/tpc/$f"
+done
+
+echo "==> joining postcodes to wards"
+(cd build && ../build/venv/bin/python postcodes.py)
+
 echo "==> writing web/data"
 (cd build && ../build/venv/bin/python web_data.py)
 

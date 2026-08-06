@@ -85,6 +85,8 @@ select {
   font: inherit; width: 100%; padding: .55rem .6rem; border-radius: 10px;
   border: 1px solid var(--line); background: var(--bg); color: var(--ink);
 }
+.none { color: var(--muted); font-weight: 400; font-size: .92em; }
+dd small { display: block; font-size: .72em; opacity: .7; font-weight: 400; }
 .hint { color: var(--muted); font-size: .8rem; margin: .4rem 0 0; font-weight: 400; }
 
 .agehint { margin-top: .7rem; }

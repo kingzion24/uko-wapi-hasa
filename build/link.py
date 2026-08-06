@@ -45,6 +45,9 @@ REGION_ALIASES = {
     "zanzibar central south": "kusini unguja",
     "zanzibar urban west": "mjini magharibi",
     "zanzibar west": "mjini magharibi",
+    # tanzaniapostcode.com naming
+    "unguja north": "kaskazini unguja",
+    "unguja south": "kusini unguja",
 }
 
 # Suffixes that appear in data.json but not in geoBoundaries ward names.

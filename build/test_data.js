@@ -41,6 +41,7 @@ for (const e of index) {
       for (const v of w.v) got.add([file.region, w.d, w.w, v].join('|'));
       if (w.g && !w.b) bad(`${e.slug}/${d}/${w.w}: geometry without bbox`);
       if (w.g && !['2018', '2015'].includes(w.s)) bad(`${e.slug}/${d}/${w.w}: geometry without a source tag`);
+      if (w.pc !== undefined && !/^\d{5}$/.test(w.pc)) bad(`${e.slug}/${d}/${w.w}: malformed postcode ${w.pc}`);
       if (w.g && !['Polygon', 'MultiPolygon'].includes(w.g.type)) bad(`${w.w}: bad geometry type`);
     }
   }
@@ -57,9 +58,11 @@ if (extra.length) { bad(`${extra.length} invented rows, e.g. ${extra.slice(0, 3)
 if (!missing.length && !extra.length) console.log('  ok — exact match, nothing lost or invented');
 
 // --- coverage ---------------------------------------------------------------
+const withPc = index.reduce((n, e) => n + e.pc, 0);
 const mapped = index.reduce((n, e) => n + e.mapped, 0);
 const total = index.reduce((n, e) => n + e.wards, 0);
 console.log(`\ncoverage: ${mapped}/${total} wards have a polygon (${(100 * mapped / total).toFixed(1)}%)`);
+console.log(`postcode: ${withPc}/${total} wards (${(100 * withPc / total).toFixed(1)}%)`);
 
 const sizes = index.map((e) => e.kb).sort((a, b) => b - a);
 console.log(`payload : index 3 KB + regions 93 KB + one region file ` +

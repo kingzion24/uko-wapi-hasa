@@ -80,6 +80,8 @@ def main():
     adm1 = json.loads((ROOT / "build" / "adm1_2018_simp.geojson").read_text())["features"]
     pts_path = ROOT / "build" / "village_points.json"
     vpoints = json.loads(pts_path.read_text()) if pts_path.exists() else {}
+    pc_path = ROOT / "build" / "ward_postcodes.json"
+    postcodes = json.loads(pc_path.read_text()) if pc_path.exists() else {}
 
     # --- geometry, per source, keyed by (Region, District, Ward) ------------
     g15 = defaultdict(list)
@@ -127,7 +129,7 @@ def main():
     # --- write per-region files --------------------------------------------
     (OUT / "wards").mkdir(parents=True, exist_ok=True)
     index = []
-    total = with_geom = located = from18 = from15 = 0
+    total = with_geom = located = from18 = from15 = with_pc = 0
 
     for region, wards in sorted(hier.items()):
         slug = slugify(region)
@@ -143,6 +145,11 @@ def main():
                 located += sum(1 for c in coords if c)
 
             key = (region, district, ward)
+            pc = postcodes.get("|".join(key))
+            if pc:
+                entry["pc"] = pc
+                with_pc += 1
+
             polys, src = g18.get(key), "2018"
             if not polys:
                 polys, src = g15.get(key), "2015"
@@ -168,6 +175,7 @@ def main():
             "old": sum(1 for e in out if e.get("s") == "2015"),   # 2015 fallback
             "nogeo": sum(1 for e in out if "g" not in e),          # no polygon
             "novill": sum(1 for e in out if not e["v"]),           # no village list
+            "pc": sum(1 for e in out if "pc" in e),                # has a postcode
             "villages": sum(len(e["v"]) for e in out),
             "located": sum(sum(1 for c in e.get("c", []) if c) for e in out),
             "bbox": [round(v, PRECISION) for v in rbox] if rbox else None,
@@ -201,6 +209,7 @@ def main():
     print(f"wards   : {total}   with polygon: {with_geom} ({100*with_geom/total:.1f}%)")
     print(f"          from 2018 NBS: {from18}   from 2015 OSM: {from15}")
     print(f"villages: {nv}   with coordinates: {located} ({100*located/nv:.1f}%)")
+    print(f"postcode: {with_pc}/{total} wards ({100*with_pc/total:.1f}%)")
     tot = sum(e["kb"] for e in index)
     sizes = sorted((e["kb"] for e in index), reverse=True)
     print(f"payload : total {tot} KB, median region {sizes[len(sizes)//2]} KB, max {sizes[0]} KB")

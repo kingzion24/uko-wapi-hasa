@@ -53,6 +53,7 @@ joined to its names at build time:
 |---|---|---|---|
 | Tanzania NBS / UN OCHA ([HDX COD-AB](https://data.humdata.org/dataset/cod-ab-tza)) | 2018 | CC BY-IGO | primary — 3,587 wards |
 | [geoBoundaries](https://www.geoboundaries.org/) ADM3 (OpenStreetMap) | 2015 | ODbL 1.0 | fallback — 73 wards |
+| [tanzaniapostcode.com](https://www.tanzaniapostcode.com/) | — | no stated licence | postcodes — 2,575 wards (69.5%) |
 
 The 2018 set carries official P-codes and full ADM1/2/3 names, so those wards are
 matched on their hierarchy rather than by deriving parents spatially. Where a
@@ -207,6 +208,37 @@ Result: 3,597 of 3,644 polygons linked (3,496 exact, 101 fuzzy).
 
 One row of `data.json` (`Mara / Musoma / <blank> / Mikuyu`) has a blank ward and
 is dropped at build time, so it cannot become an empty form field.
+
+## Postcodes
+
+Postcodes come from **[tanzaniapostcode.com](https://www.tanzaniapostcode.com/)**,
+which is not ours and is credited on the page. Their sitemap encodes every record
+in the URL itself:
+
+```
+/arusha-arumeru-akheri-akheri-23306.html
+ region  district ward   location postcode
+```
+
+so the whole dataset comes from **one sitemap download — the site is never
+crawled**. The postcode is constant across a ward's locations, so it joins at
+ward level. `build/postcodes.py` matches their slugs against our own ward names
+(theirs omit the `" Ward"`/`" Shehia"` suffix ours carry, and their district
+names differ — their `arumeru` is our `meru`, so the match is on region + ward
+with the district only breaking ties). 2,575 of 3,705 wards resolve; where a
+majority of a ward's records disagree, the ward is dropped rather than guessed.
+
+It is a third-party aggregator, not Tanzania Posts Corporation, so it was
+cross-checked against an independent source: the 913 well-formed `addr:postcode`
+tags in OSM that fall inside Tanzania. **9 of 10 regions agreed**, and 29 of 31
+regions use a single consistent prefix. The one disagreement is Songwe (site
+`54`, OSM `35`) — `35` is Kagera's prefix and Songwe is nowhere near Kagera, so
+a bad OSM import is the likelier explanation, but it is unverified.
+
+The page states it is not an official postal source and points to posta.co.tz
+for anything legally significant. Note the `TZ…` code also shown is an OCHA
+statistical P-code, **not** postal — the two are labelled distinctly so they
+cannot be confused.
 
 ## Visitor counter
 
