@@ -50,6 +50,19 @@
     <span class="en">On a computer, location is estimated from the network and can be off by
       kilometres — use a phone for an accurate result.</span></p>
 
+  <!-- Shown when the fix lands outside Tanzania. English first: someone abroad
+       is less likely to read Swahili. -->
+  <section id="outside" class="outside" hidden>
+    <h2>You are outside Tanzania <small>Uko nje ya Tanzania</small></h2>
+    <p>This tool only covers Tanzania — its region, district, ward and village data
+      stops at the border, so it cannot tell you where you are from here.</p>
+    <p>If you are filling in a form for somewhere <strong>in</strong> Tanzania — for
+      family, or on someone's behalf — open <strong>“Tafuta mahali pengine / Look up
+      another place”</strong> below and choose it by name.</p>
+    <p class="sw">Zana hii inahusu Tanzania pekee. Kama unajaza fomu ya mahali fulani
+      Tanzania, tumia “Tafuta mahali pengine” hapa chini.</p>
+  </section>
+
   <section id="result" hidden>
     <div id="map"></div>
 
@@ -86,18 +99,31 @@
     <p class="coords" id="coords"></p>
   </section>
 
-  <!-- Fallback only. Stays hidden unless GPS is refused, fails, or returns
-       something too coarse to trust; revealed by revealManual() in app.js. -->
-  <section id="manual-wrap" hidden>
-    <div class="manual-body">
-      <h2 class="manual-title">Chagua mahali pako <small>Choose your location</small></h2>
-      <p class="hint" id="manual-why"></p>
-      <label>Mkoa <small>Region</small><select id="m-region"></select></label>
-      <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
-      <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
-      <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
-      <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
-    </div>
+  <!-- Two entry points, one component: a deliberate "look up another place",
+       and the GPS-failure fallback, which opens it and explains why. -->
+  <section id="manual-wrap">
+    <details id="lookup">
+      <summary>Tafuta mahali pengine <small>Look up another place</small></summary>
+      <div class="manual-body">
+        <p class="hint" id="manual-why" hidden></p>
+        <p class="hint" id="lookup-hint">Kwa kujaza fomu ya mtu mwingine, au kujua msimbo
+          wa posta wa mahali fulani. Lazima ujue mkoa na wilaya.
+          <span class="en">For filling a form on someone else's behalf, or finding a
+            place's postcode. You need to know its region and district.</span></p>
+
+        <label>Mkoa <small>Region</small><select id="m-region"></select></label>
+        <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
+        <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
+        <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
+
+        <dl class="fields" id="m-out" hidden>
+          <div class="row"><dt>Msimbo wa posta <small>Postcode</small></dt>
+            <dd id="m-postcode">—</dd></div>
+        </dl>
+
+        <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
+      </div>
+    </details>
   </section>
 
   <footer>

@@ -48,6 +48,12 @@ async function candidateRegions(lng, lat) {
   return out;
 }
 
+/* How far the nearest-ward fallback may reach. Legitimate uses of it -- the 45
+ * wards with no polygon, and gaps left by simplification -- land within a few
+ * hundred metres. Without a cap, a point at sea or over the border returns a
+ * confident-looking ward tens of kilometres away. */
+const MAX_FALLBACK_M = 10000;
+
 async function resolve(lng, lat) {
   for (const slug of await candidateRegions(lng, lat)) {
     const file = await getWards(slug);
@@ -65,7 +71,7 @@ async function resolve(lng, lat) {
       if (!best || d < best.dist) best = { region: file.region, slug, ward: w, dist: d, exact: false };
     }
   }
-  return best;
+  return best && best.dist <= MAX_FALLBACK_M ? best : null;
 }
 
 // Other wards whose boundary falls inside the GPS uncertainty radius.
@@ -311,6 +317,7 @@ async function locate() {
 
   btn.disabled = true;
   btn.classList.add('busy');
+  $('outside').hidden = true;
   setStatus('Inatafuta mahali ulipo…');
 
   navigator.geolocation.getCurrentPosition(
@@ -320,9 +327,14 @@ async function locate() {
         setStatus('Inalinganisha na mipaka ya kata…');
         const res = await resolve(lng, lat);
         if (!res) {
-          setStatus('Mahali hapa hapako ndani ya Tanzania.', true);
-          revealManual(`Hatukuweza kukuweka ndani ya mipaka ya Tanzania. Chagua mahali pako hapa chini.
-            <span class="en">Your position did not fall inside Tanzania — choose your location below.</span>`);
+          setStatus('');
+          $('result').hidden = true;
+          $('outside').hidden = false;
+          $('outside').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Diaspora filling forms for home is a real use, so open the lookup --
+          // but framed as looking a place up, not as fixing a failed fix.
+          await ensureManual();
+          $('lookup').open = true;
         } else {
           await render(res, lat, lng, acc);
           setStatus('');
@@ -375,20 +387,29 @@ async function locate() {
 
 let manualReady = false;
 
-async function revealManual(why) {
-  const wrap = $('manual-wrap');
-  $('manual-why').innerHTML = why;
-  if (!manualReady) {
-    try {
-      await initManual();
-      manualReady = true;
-    } catch (e) {
-      console.error(e);
-      return;
-    }
+async function ensureManual() {
+  if (manualReady) return true;
+  try {
+    await initManual();
+    manualReady = true;
+  } catch (e) {
+    console.error(e);
+    return false;
   }
-  wrap.hidden = false;
-  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return true;
+}
+
+/* GPS could not answer: open the lookup and say why. Same component the user
+ * can open deliberately, but framed as a rescue rather than a browse. */
+async function revealManual(why) {
+  if (!(await ensureManual())) return;
+  const box = $('lookup');
+  $('manual-why').innerHTML = why;
+  $('manual-why').hidden = false;
+  $('lookup-hint').hidden = true;
+  box.classList.add('urgent');
+  box.open = true;
+  $('manual-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function initManual() {
@@ -400,10 +421,10 @@ async function initManual() {
   mR.add(new Option('— chagua mkoa —', ''));
   idx.forEach((e) => mR.add(new Option(e.region, e.slug)));
 
-  let wards = [];
+  let wards = [], picked = null;
   mR.onchange = async () => {
     reset(mD, '— chagua wilaya —'); reset(mW, '— chagua kata —'); reset(mV, '— chagua kijiji —');
-    mC.disabled = true;
+    mC.disabled = true; picked = null; $('m-out').hidden = true;
     if (!mR.value) return;
     wards = (await getWards(mR.value)).wards;
     [...new Set(wards.map((w) => w.d))].sort().forEach((d) => mD.add(new Option(d, d)));
@@ -411,7 +432,7 @@ async function initManual() {
   };
   mD.onchange = () => {
     reset(mW, '— chagua kata —'); reset(mV, '— chagua kijiji —');
-    mC.disabled = true;
+    mC.disabled = true; picked = null; $('m-out').hidden = true;
     if (!mD.value) return;
     wards.filter((w) => w.d === mD.value).map((w) => w.w).sort()
       .forEach((w) => mW.add(new Option(w, w)));
@@ -420,15 +441,33 @@ async function initManual() {
   mW.onchange = () => {
     reset(mV, '— chagua kijiji —');
     mC.disabled = true;
+    picked = null;
+    $('m-out').hidden = true;
     if (!mW.value) return;
     const w = wards.find((x) => x.d === mD.value && x.w === mW.value);
+    picked = w;
+    // The postcode is a property of the ward, so it can be shown before a
+    // village is picked -- often it is the only thing the visitor came for.
+    $('m-postcode').innerHTML = w.pc
+      ? `${w.pc} <small>tanzaniapostcode.com — hakiki kama ni muhimu kisheria</small>`
+      : `<span class="none">hatuna kwa kata hii <small>not in our source</small></span>`;
+    $('m-out').hidden = false;
+    if (!w.v.length) {
+      mV.innerHTML = '';
+      mV.add(new Option('— hatuna orodha ya vijiji —', ''));
+      mV.disabled = true;
+      mC.disabled = false;   // region/district/ward/postcode are still worth copying
+      return;
+    }
     w.v.forEach((v) => mV.add(new Option(v, v)));
     mV.disabled = false;
   };
   mV.onchange = () => { mC.disabled = !mV.value; };
   mC.onclick = () => copy(mC, [
     `Mkoa: ${mR.selectedOptions[0].text}`, `Wilaya: ${mD.value}`,
-    `Kata/Shehia: ${mW.value}`, `Kijiji/Mtaa: ${mV.value}`,
+    `Kata/Shehia: ${mW.value}`,
+    `Kijiji/Mtaa: ${mV.value || '(hatuna orodha)'}`,
+    ...(picked && picked.pc ? [`Msimbo wa posta: ${picked.pc}`] : []),
   ].join('\n'));
 }
 
@@ -519,6 +558,8 @@ getIndex().then((idx) => {
   $('cov-pc').textContent = pct(sum('pc'), sum('wards'));
   showQuality(idx);
 }).catch((e) => console.error(e));
+
+$('lookup').addEventListener('toggle', () => { if ($('lookup').open) ensureManual(); });
 
 showBoundaryAge();
 adaptToDevice();

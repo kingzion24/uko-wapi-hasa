@@ -93,6 +93,17 @@ dd small { display: block; font-size: .72em; opacity: .7; font-weight: 400; }
 .actions { display: flex; gap: .6rem; margin-top: .9rem; }
 .src .age { color: var(--ink); display: inline-block; margin-top: .25rem; }
 
+.outside {
+  background: var(--card); border: 1px solid var(--line);
+  border-left: 4px solid var(--brand); border-radius: var(--radius);
+  padding: 1rem; font-size: .9rem;
+}
+.outside h2 { font-size: 1.05rem; margin: 0 0 .5rem; color: var(--ink); }
+.outside h2 small { display: inline; margin-left: .4rem; }
+.outside p { margin: .5rem 0; color: var(--muted); }
+.outside .sw { font-style: italic; }
+.outside strong { color: var(--ink); }
+
 .warn {
   background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
   padding: .75rem .9rem; border-radius: var(--radius); font-size: .88rem; margin-bottom: 1rem;
@@ -103,14 +114,11 @@ details { background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); padding: .75rem .9rem; margin-top: 1rem; }
 summary { cursor: pointer; font-weight: 600; }
 summary small { display: inline; margin-left: .35rem; }
-.manual-body {
-  display: grid; gap: .8rem;
-  background: var(--card); border: 1px solid var(--warn-line);
-  border-radius: var(--radius); padding: 1rem;
-}
-.manual-title { font-size: 1.05rem; margin: 0; color: var(--ink); }
-.manual-title small { display: inline; margin-left: .4rem; }
-#manual-wrap[hidden] { display: none; }
+.manual-body { display: grid; gap: .8rem; margin-top: .9rem; }
+/* Amber only when the lookup was forced open by a GPS failure. */
+#lookup.urgent { border-color: var(--warn-line); }
+#lookup.urgent > summary { color: var(--warn-ink); }
+#m-out { margin-top: .2rem; }
 .manual-body label { font-weight: 600; font-size: .85rem; color: var(--muted); display: grid; gap: .3rem; }
 .manual-body button { margin-top: .2rem; }
 

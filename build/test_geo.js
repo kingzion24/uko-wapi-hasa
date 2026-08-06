@@ -96,11 +96,26 @@ for (const [name, lat, lng, want] of CASES) {
   if (!ok) console.log(`       expected region ${want}`);
 }
 
-// A point well outside Tanzania (Nairobi) must not resolve.
-const out = resolve(36.8219, -1.2921);
-const outOk = !out || !out.exact;
-console.log(`\n  ${outOk ? 'ok  ' : 'FAIL'} Nairobi rejected (no exact ward match)`);
-outOk ? pass++ : fail++;
+// Points outside Tanzania must resolve to nothing at all. The nearest-ward
+// fallback is capped, because without it a point at sea returned a confident
+// ward 30 km away.
+const MAX_FALLBACK_M = 10000;
+const OUTSIDE = [
+  ['Nairobi, Kenya', -1.2921, 36.8219], ['Mombasa, Kenya', -4.0435, 39.6682],
+  ['Kampala, Uganda', 0.3476, 32.5825], ['Lilongwe, Malawi', -13.9626, 33.7741],
+  ['Lusaka, Zambia', -15.3875, 28.3228], ['Bujumbura, Burundi', -3.3614, 29.3599],
+  ['Kigali, Rwanda', -1.9441, 30.0619], ['Pemba, Mozambique', -12.9740, 40.5178],
+  ['Lake Victoria', -1.5, 33.0], ['Indian Ocean off Dar', -6.8, 39.6],
+  ['London, UK', 51.5074, -0.1278],
+];
+console.log('\noutside Tanzania (must not resolve)');
+for (const [name, lat, lng] of OUTSIDE) {
+  const r = resolve(lng, lat);
+  const ok = !r || (!r.exact && r.dist > MAX_FALLBACK_M);
+  ok ? pass++ : fail++;
+  console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(22)}` +
+    (r ? ` got ${r.region}/${r.ward.w} at ${(r.dist / 1000).toFixed(1)} km` : ' rejected'));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
