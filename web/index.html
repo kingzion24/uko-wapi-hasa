@@ -22,7 +22,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Uko Wapi">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -72,6 +72,9 @@
       <button id="copy" class="ghost">Nakili taarifa <small>Copy</small></button>
       <button id="again" class="ghost">Pima tena <small>Retry</small></button>
     </div>
+
+    <p class="report"><a id="report" href="#">Kata si sahihi? Niambie
+      <small>Wrong ward? Report it</small></a></p>
 
     <details id="alts" hidden>
       <summary>Kata jirani <small>Nearby wards</small></summary>
@@ -173,22 +176,28 @@
         <li>Ukurasa huu <strong>si uthibitisho rasmi wa makazi</strong>. Hauna
           uthibitisho wa utambulisho, na mtu yeyote anaweza kupata jibu lolote.
           Ni msaada wa kujaza fomu tu.</li>
-        <li>Taarifa yako ya GPS <strong>haitoki kwenye simu yako</strong> — hakuna
-          seva yetu, hakuna akaunti, hakuna kumbukumbu inayohifadhiwa. Mahali ulipo
-          hakuna anayeliona ila wewe.</li>
-        <li>Kuna kihesabu cha wageni chini ya ukurasa. Kinahesabu <em>mara ukurasa
-          ulivyofunguliwa tu</em> — hakituma mahali ulipo wala jina lako.
-          Huduma hii ni ya nje (abacus.jasoncameron.dev), hivyo huona anwani yako
-          ya IP kama tovuti nyingine yoyote.</li>
+        <li><strong>Hatuhifadhi chochote.</strong> Hakuna seva yetu, hakuna akaunti,
+          hakuna kumbukumbu. Namba zako za GPS <strong>hazitumwi popote</strong> —
+          hakuna ombi lolote linalobeba latitudo na longitudo yako, na hakuna
+          anayeziona wala kuzihifadhi.</li>
+        <li><strong>Lakini ramani inaonyesha eneo lako kwa ukaribu.</strong> Vipande
+          vya ramani hupakuliwa kutoka OpenStreetMap, na anwani ya kila kipande ina
+          nafasi yake — hivyo seva ya OpenStreetMap hujua takribani ulipo, kama
+          ilivyo kwa tovuti yoyote inayotumia ramani. Hii hutokea tu ukibonyeza
+          kitufe.</li>
+        <li>Kihesabu cha wageni (abacus.jasoncameron.dev) huhesabu <em>mara ukurasa
+          ulivyofunguliwa tu</em> — hakituma mahali ulipo wala jina lako.</li>
+        <li>Kama tovuti yoyote, seva zinazotupa ukurasa (GitHub Pages) huona anwani
+          yako ya IP na aina ya kivinjari. Faili la mkoa unaopakua linaonyesha mkoa
+          uliomo, lakini si mahali kamili.</li>
       </ul>
       <p class="en">Region, district and ward come from official boundary data; the
         village/mtaa is a best guess you must confirm. Phone GPS is accurate to
         5–50&nbsp;m at best, boundaries date from a 2015 OpenStreetMap snapshot, and this
-        page performs no identity check, and the ward boundaries describe Tanzania as
-        it was divided in 2015 — it is a form-filling aid, not proof of
-        residence. Your location never leaves your device; the only outbound request
-        is an anonymous page-view counter, which sees your IP address but never your
-        coordinates.</p>
+        page performs no identity check — it is a form-filling aid, not proof of
+        residence. We store nothing and your coordinates are never transmitted to any
+        server. Map tiles are the exception: fetching them tells OpenStreetMap
+        roughly where you are, as on any site with a map.</p>
     </div>
     </details>
 
@@ -208,7 +217,7 @@
   </footer>
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="geo.js"></script>
 <script src="app.js"></script>
 </body>

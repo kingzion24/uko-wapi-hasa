@@ -122,6 +122,11 @@ summary small { display: inline; margin-left: .35rem; }
 }
 .leaflet-tooltip.vt::before { border-top-color: #b45309; }
 
+.report { margin-top: .7rem; text-align: center; font-size: .82rem; }
+.report a { color: var(--muted); }
+.report a:hover { color: var(--brand); }
+.report small { display: inline; margin-left: .3rem; }
+
 .coords { color: var(--muted); font-size: .78rem; margin-top: .8rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 

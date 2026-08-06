@@ -203,6 +203,26 @@ async function render(res, lat, lng, acc) {
        haipatikani kwenye seti ya 2018. Hakiki kama kata yako iligawanywa hivi karibuni.
        <span class="en">This ward falls back to the older 2015 boundary.</span>`;
 
+  // Prefill a report with everything needed to diagnose a wrong ward. Users
+  // will not think to include coordinates, and without them a report is
+  // unactionable.
+  const report = [
+    'Kata iliyoonyeshwa si sahihi. / The ward shown is wrong.',
+    '',
+    `Ilionyesha / Reported: ${res.region} / ${w.d} / ${w.w}`,
+    'Sahihi ni / Should be: ',
+    '',
+    '--- taarifa za kiufundi / technical details ---',
+    `coords:   ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    `accuracy: ±${Math.round(acc)} m`,
+    `match:    ${res.exact ? 'inside polygon' : `nearest ward, ${Math.round(res.dist || 0)} m away`}`,
+    `boundary: ${w.s || 'none'}${w.p ? ` (pcode ${w.p})` : ''}`,
+    `villages: ${w.v.length} listed, ${(w.c || []).filter(Boolean).length} located`,
+  ].join('\n');
+  $('report').href = 'mailto:mdendutevin@gmail.com'
+    + '?subject=' + encodeURIComponent(`Uko Wapi: kata si sahihi (${w.w})`)
+    + '&body=' + encodeURIComponent(report);
+
   const note = $('v-note').innerHTML;
   $('f-village').onchange = (e) => {
     $('v-note').innerHTML = (guess && e.target.value !== guess.name)

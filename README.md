@@ -11,8 +11,9 @@ your GPS, and it tells you which region, district and ward you are in, then
 names the closest village/mtaa for you to confirm. The point is to stop people
 typing the wrong thing into forms.
 
-No login, no backend, no accounts. Everything runs in the browser and no
-location data leaves the phone.
+No login, no backend, no accounts. Nothing is stored and your coordinates are
+never transmitted anywhere. One caveat, stated on the page too: fetching map
+tiles tells OpenStreetMap roughly where you are, as on any site with a map.
 
 Live at **https://ukowapi.site**
 
@@ -64,6 +65,9 @@ At runtime the browser loads:
 | `data/index.json`          | 4 KB                     | on page load     |
 | `data/regions.json`        | 93 KB                    | on first locate  |
 | `data/wards/<region>.json` | 88 KB median, 165 KB max | only your region |
+
+Leaflet is vendored into `web/vendor/` rather than loaded from a CDN, so the
+page makes no third-party asset requests and the map works offline.
 
 So a visitor downloads roughly 185 KB, not the 47 MB of raw boundary data.
 Point-in-polygon resolution takes 1–4 ms. A service worker caches everything,
