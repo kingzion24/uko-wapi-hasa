@@ -117,5 +117,24 @@ for (const [name, lat, lng] of OUTSIDE) {
     (r ? ` got ${r.region}/${r.ward.w} at ${(r.dist / 1000).toFixed(1)} km` : ' rejected'));
 }
 
+// --- address block ------------------------------------------------------
+const { addressBlock } = require('../web/geo.js');
+const ADDR = [
+  ['full', { region: 'Arusha', district: 'Meru', ward: 'Akheri', pc: '23306' }, 'Tengeru',
+   '[Namba ya nyumba na barabara]\nTengeru\nAkheri\n23306 Meru\nARUSHA\nTANZANIA'],
+  ['no postcode, no village', { region: 'Songwe', district: 'Mbozi', ward: 'Vwawa' }, '',
+   '[Namba ya nyumba na barabara]\nVwawa\nMbozi\nSONGWE\nTANZANIA'],
+  ['strips the Region suffix',
+   { region: 'Dar es Salaam Region', district: 'Ilala Municipal Council', ward: 'Jangwani', pc: '11101' }, 'Mtambani',
+   '[Namba ya nyumba na barabara]\nMtambani\nJangwani\n11101 Ilala Municipal Council\nDAR ES SALAAM\nTANZANIA'],
+];
+console.log('\naddress block');
+for (const [name, cur, village, want] of ADDR) {
+  const got = addressBlock(cur, village);
+  const ok = got === want;
+  ok ? pass++ : fail++;
+  console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name}`);
+  if (!ok) console.log(`       got:\n${got}\n       want:\n${want}`);
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

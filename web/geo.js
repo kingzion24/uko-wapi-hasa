@@ -1,5 +1,5 @@
-/* Pure geometry helpers — no DOM, no network. Shared by the app and the
- * Node test in build/test_geo.js, so both exercise the same code. */
+/* Pure helpers — no DOM, no network. Shared by the app and the Node tests, so
+ * both exercise the same code. */
 
 const inBbox = (x, y, b) => !!b && x >= b[0] && y >= b[1] && x <= b[2] && y <= b[3];
 
@@ -60,9 +60,24 @@ function fmtDist(m) {
   return m < 1000 ? `mita ${Math.round(m / 10) * 10}` : `km ${(m / 1000).toFixed(1)}`;
 }
 
+/* An address block in the order Tanzanian addresses are written: finest first,
+ * postcode beside the district, region last, country last of all. NaPA builds an
+ * address from house number + road + mtaa + ward + postcode + district + region.
+ * We know everything from the mtaa outwards, so the two parts only the resident
+ * knows are left as a visible prompt rather than silently dropped. */
+function addressBlock({ region, district, ward, pc }, village) {
+  const lines = ['[Namba ya nyumba na barabara]'];
+  if (village) lines.push(village);
+  if (ward) lines.push(ward);
+  lines.push(pc ? `${pc} ${district}` : district);
+  lines.push(String(region || '').replace(/ Region$/, '').toUpperCase());
+  lines.push('TANZANIA');
+  return lines.join('\n');
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     inBbox, pointInRing, pointInPoly, polysOf, pointInGeom, distToBoundary,
-    distMeters, fmtDist,
+    distMeters, fmtDist, addressBlock,
   };
 }

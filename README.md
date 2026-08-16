@@ -186,7 +186,8 @@ Needs
 | `build/link2018.py`  | Joins the 2018 NBS polygons; carries in new regions    |
 | `build/villages.py`  | Gives villages/mitaa a coordinate from OSM             |
 | `build/web_data.py`  | Splits into per-region files for the web app           |
-| `build/test_geo.js`  | Resolves 16 known towns + rejects Nairobi              |
+| `build/test_geo.js`  | Towns resolve, foreign points do not, address formatting |
+| `build/test_markup.js` | Every id app.js uses exists; no third-party assets   |
 | `build/test_data.js` | Verifies`web/data` round-trips `data.json` exactly |
 
 ### The join
@@ -211,7 +212,15 @@ is dropped at build time, so it cannot become an empty form field.
 
 ## Postcodes
 
-Postcodes come from **[tanzaniapostcode.com](https://www.tanzaniapostcode.com/)**,
+**The authoritative source is the Government's
+[NaPA](https://napa.mawasiliano.go.tz/find-postcode)** (National Postcode and
+Addressing system, Ministry of Communication). The site links to it from the
+postcode field and says plainly that what we show is unofficial — use NaPA for
+anything official. Its API is authenticated (`401` without credentials), so
+there is no bulk data to pull; requesting access would be the way to replace our
+source outright.
+
+What we show instead comes from **[tanzaniapostcode.com](https://www.tanzaniapostcode.com/)**,
 which is not ours and is credited on the page. Their sitemap encodes every record
 in the URL itself:
 
@@ -239,6 +248,30 @@ The page states it is not an official postal source and points to posta.co.tz
 for anything legally significant. Note the `TZ…` code also shown is an OCHA
 statistical P-code, **not** postal — the two are labelled distinctly so they
 cannot be confused.
+
+## Address format
+
+Copying offers two shapes, because they serve different jobs:
+
+- **Nakili sehemu** — labelled fields (`Mkoa: …`, `Wilaya: …`), for filling a form
+  box by box.
+- **Nakili anwani** — an address block in the order Tanzanian addresses are
+  written, finest first with the postcode beside the district:
+
+```
+[Namba ya nyumba na barabara]
+Tengeru
+Akheri
+23306 Meru
+ARUSHA
+TANZANIA
+```
+
+NaPA composes an address from house number + road + mtaa + ward + postcode +
+district + region. We know everything from the mtaa outwards, so the first line
+is left as a visible prompt rather than silently dropped — the resident is the
+only one who knows it. Adding road names (from OSM) is the obvious next step and
+would complete the format.
 
 ## Visitor counter
 

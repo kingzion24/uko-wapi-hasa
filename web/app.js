@@ -165,6 +165,8 @@ function fillVillages(sel, ward, lng, lat) {
   return known[0];
 }
 
+/* Labelled fields, for copying into a form box by box. The address-block form
+ * lives in geo.js as addressBlock(). */
 function statement() {
   const v = $('f-village').value;
   return [
@@ -183,9 +185,10 @@ async function render(res, lat, lng, acc) {
   $('f-region').textContent = res.region;
   $('f-district').textContent = w.d;
   $('f-ward').textContent = w.w;
+  const napa = '<a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>';
   $('f-postcode').innerHTML = w.pc
-    ? `${w.pc} <small>tanzaniapostcode.com — hakiki kama ni muhimu kisheria</small>`
-    : `<span class="none">hatuna kwa kata hii <small>not in our source</small></span>`;
+    ? `${w.pc} <small>si rasmi — thibitisha ${napa} (Serikali)</small>`
+    : `<span class="none">hatuna kwa kata hii <small>tafuta ${napa}</small></span>`;
 
   const guess = fillVillages($('f-village'), w, lng, lat);
   if (guess) {
@@ -549,6 +552,7 @@ async function copy(btn, text) {
 $('locate').onclick = locate;
 $('again').onclick = locate;
 $('copy').onclick = (e) => copy(e.currentTarget, statement());
+$('copy-addr').onclick = (e) => copy(e.currentTarget, addressBlock(current, $('f-village').value));
 
 getIndex().then((idx) => {
   const sum = (k) => idx.reduce((n, e) => n + e[k], 0);
