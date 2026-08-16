@@ -43,6 +43,9 @@ jobs:
       - name: Geometry (known coordinates resolve to the right ward)
         run: node build/test_geo.js
 
+      - name: Markup (ids resolve, tags balance, no third-party assets)
+        run: node build/test_markup.js
+
       - name: Syntax check
         run: |
           node --check web/app.js
