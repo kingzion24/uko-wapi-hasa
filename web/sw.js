@@ -13,7 +13,7 @@
  *   app shell       network-first, cache as fallback
  *   vendor/         cache-first -- versioned by filename, never changes
  */
-const CACHE = 'ukowapi-v3';
+const CACHE = 'ukowapi-v4';
 const SHELL = [
   './', 'index.html', 'style.css', 'app.js', 'geo.js',
   'manifest.webmanifest', 'icon.svg', 'data/index.json',

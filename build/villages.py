@@ -6,7 +6,12 @@ matched by name against that ward's village list from data.json. Matching
 inside a ward keeps it safe: a name only has to be unique among the handful of
 villages in one ward, not nationally.
 
+Assignment uses the NBS 2022 ward polygons -- the same ones the app ships. Using
+different polygons than the ones we serve would put a village in a ward the site
+never shows it in.
+
 Outputs build/village_points.json: "Region|District|Ward|Village" -> [lon, lat]
+keyed on data.json's spelling, because that is what web_data reads back.
 """
 import json
 from collections import defaultdict
@@ -16,7 +21,8 @@ from rapidfuzz import fuzz, process
 from shapely.geometry import Point, shape
 from shapely.strtree import STRtree
 
-from link import norm
+from names import norm, region_key, ward_key
+from nbs2022 import pick_source, source_villages
 
 ROOT = Path(__file__).resolve().parent.parent
 NAME_SCORE_MIN = 90
@@ -24,10 +30,7 @@ NAME_SCORE_MIN = 90
 
 def main():
     rows = json.loads((ROOT / "data.json").read_text())
-    linked = json.loads((ROOT / "build" / "linked.json").read_text())
-    linked18 = json.loads((ROOT / "build" / "linked_2018.json").read_text())
-    adm3 = json.loads((ROOT / "build" / "adm3_simp.geojson").read_text())["features"]
-    adm3_18 = json.loads((ROOT / "build" / "adm3_2018_simp.geojson").read_text())["features"]
+    wards_gj = json.loads((ROOT / "build" / "nbs2022_simp.geojson").read_text())["features"]
     # Rural villages are mapped as place=* nodes; urban mitaa are more often
     # areas (place=subward/neighbourhood) or low-level admin boundaries, so all
     # three sources are merged and reduced to a single representative point.
@@ -45,33 +48,24 @@ def main():
             places.append({"lat": c["lat"], "lon": c["lon"], "tags": e.get("tags", {})})
         print(f"  {src}: {len(els)} elements")
 
-    # villages of each ward, from data.json
+    # Villages of each ward, from data.json, indexed the way the 2022 wards
+    # join to it.
+    source = source_villages(rows)
     villages = defaultdict(list)
-    for r in rows:
-        if all(str(r[k]).strip() for k in r):
-            villages[(r["Region"], r["District"], r["Ward_Shehia"])].append(r["Village_Mtaa"])
+    for cands in source.values():
+        for triple, vs in cands.items():
+            villages[triple].extend(vs)
 
-    # Ward polygons keyed to their data.json identity, using the same hybrid the
-    # app ships: 2018 where available, 2015 otherwise. Assigning place nodes with
-    # different polygons than the ones we serve would misplace villages.
-    by_key = {}
-    g15 = {f["properties"]["shapeID"]: f["geometry"] for f in adm3}
-    g18 = {f["properties"]["ADM3_PCODE"]: f["geometry"] for f in adm3_18}
-    for rec in linked:
-        g = g15.get(rec["shapeID"])
-        if g:
-            by_key.setdefault((rec["region"], rec["district"], rec["ward"]), g)
-    for rec in linked18:                       # 2018 wins where present
-        g = g18.get(rec["pcode"])
-        if g:
-            by_key[(rec["region"], rec["district"], rec["ward"])] = g
-
+    # Each 2022 ward polygon, tagged with the data.json ward it corresponds to.
     geoms, keys = [], []
-    for key, g in by_key.items():
-        if key not in villages:
+    for f in wards_gj:
+        p = f["properties"]
+        cands = source.get((region_key(p["reg_name"]), ward_key(p["ward_name"])), {})
+        triple = pick_source(cands, p["dist_name"], p["counc_name"])
+        if not triple:
             continue
-        geoms.append(shape(g))
-        keys.append(key)
+        geoms.append(shape(f["geometry"]))
+        keys.append(triple)
     tree = STRtree(geoms)
     print(f"ward polygons: {len(geoms)}   OSM place nodes: {len(places)}")
 

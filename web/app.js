@@ -172,6 +172,7 @@ function statement() {
   return [
     `Mkoa: ${current.region}`,
     `Wilaya: ${current.district}`,
+    `Halmashauri: ${current.council}`,
     `Kata/Shehia: ${current.ward}`,
     `Kijiji/Mtaa: ${v || '(hujachagua)'}`,
     ...(current.pc ? [`Msimbo wa posta: ${current.pc}`] : []),
@@ -180,10 +181,13 @@ function statement() {
 
 async function render(res, lat, lng, acc) {
   const w = res.ward;
-  current = { region: res.region, district: w.d, ward: w.w, pc: w.pc };
+  current = { region: res.region, district: w.d, council: w.cn, ward: w.w, pc: w.pc };
 
   $('f-region').textContent = res.region;
-  $('f-district').textContent = w.d;
+  // The short name is what forms ask for; the full council name underneath is
+  // what proves which council it is -- and is the whole point of the 2022
+  // rebuild, since Ubungo and Kigamboni did not exist in the older sources.
+  $('f-district').innerHTML = `${w.d}<small>${w.cn}</small>`;
   $('f-ward').textContent = w.w;
   const napa = '<a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>';
   $('f-postcode').innerHTML = w.pc
@@ -206,17 +210,13 @@ async function render(res, lat, lng, acc) {
   }
 
   // Say which boundary set answered, and how old it is.
-  const year = w.s === '2015' ? 2015 : 2018;
-  const age = new Date().getFullYear() - year;
-  $('src-note').innerHTML = w.s === '2018'
-    ? `Mipaka ya kata: Ofisi ya Taifa ya Takwimu (NBS), mwaka 2018 — miaka ${age} iliyopita.
-       ${w.p ? `Msimbo wa kata wa takwimu (P-code): <strong>${w.p}</strong> —
-         <strong>huu si msimbo wa posta.</strong>` : ''}
-       <span class="en">Ward boundary from the 2018 national statistics dataset. The
-         P-code is a statistical identifier, not a postcode.</span>`
-    : `Mipaka ya kata hii ni ya OpenStreetMap mwaka 2015 — miaka ${age} iliyopita, kwa sababu
-       haipatikani kwenye seti ya 2018. Hakiki kama kata yako iligawanywa hivi karibuni.
-       <span class="en">This ward falls back to the older 2015 boundary.</span>`;
+  const age = new Date().getFullYear() - BOUNDARY_YEAR;
+  $('src-note').innerHTML = `Mipaka ya kata: Sensa ya Watu na Makazi ${BOUNDARY_YEAR},
+     Ofisi ya Taifa ya Takwimu (NBS) — miaka ${age} iliyopita.
+     Msimbo wa kata wa takwimu: <strong>${w.code}</strong> —
+     <strong>huu si msimbo wa posta.</strong>
+     <span class="en">Ward boundary and council from the ${BOUNDARY_YEAR} Population and
+       Housing Census. The ward code is a statistical identifier, not a postcode.</span>`;
 
   // Prefill a report with everything needed to diagnose a wrong ward. Users
   // will not think to include coordinates, and without them a report is
@@ -225,13 +225,14 @@ async function render(res, lat, lng, acc) {
     'Kata iliyoonyeshwa si sahihi. / The ward shown is wrong.',
     '',
     `Ilionyesha / Reported: ${res.region} / ${w.d} / ${w.w}`,
+    `Halmashauri / Council: ${w.cn}`,
     'Sahihi ni / Should be: ',
     '',
     '--- taarifa za kiufundi / technical details ---',
     `coords:   ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     `accuracy: ±${Math.round(acc)} m`,
     `match:    ${res.exact ? 'inside polygon' : `nearest ward, ${Math.round(res.dist || 0)} m away`}`,
-    `boundary: ${w.s || 'none'}${w.p ? ` (pcode ${w.p})` : ''}`,
+    `boundary: NBS ${BOUNDARY_YEAR} census, ward code ${w.code}`,
     `postcode: ${w.pc || 'none'}`,
     `villages: ${w.v.length} listed, ${(w.c || []).filter(Boolean).length} located`,
   ].join('\n');
@@ -314,6 +315,39 @@ function adaptToDevice() {
     <span class="en">Your browser has no geolocation support — choose your location below.</span>`);
 }
 
+/* A phone's first fix is usually the coarse network one; the GPS chip then
+ * refines it over a few seconds, often from ±1500 m to ±10 m. getCurrentPosition
+ * hands back whichever arrives first, so watch instead and keep the best
+ * reading. Stops early once the fix is good enough to be worth no more waiting.
+ *
+ * GOOD_ENOUGH_M is well under the 152 m radius of the smallest ward in the
+ * country, so a fix this tight resolves even Zanzibar's tightest shehia. */
+const GOOD_ENOUGH_M = 25;
+const WATCH_MS = 8000;
+
+function bestPosition() {
+  return new Promise((resolve, reject) => {
+    let best = null, done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      navigator.geolocation.clearWatch(id);
+      best ? resolve(best) : reject({ code: 3 });
+    };
+    const timer = setTimeout(finish, WATCH_MS);
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+        if (best.coords.accuracy <= GOOD_ENOUGH_M) finish();
+        else setStatus(`Inaboresha usahihi… ±${Math.round(best.coords.accuracy)} m`);
+      },
+      (err) => { if (!best) { done = true; clearTimeout(timer); navigator.geolocation.clearWatch(id); reject(err); } },
+      { enableHighAccuracy: true, timeout: WATCH_MS, maximumAge: 0 }
+    );
+  });
+}
+
 async function locate() {
   const btn = $('locate');
   if (!navigator.geolocation) return adaptToDevice();
@@ -323,7 +357,7 @@ async function locate() {
   $('outside').hidden = true;
   setStatus('Inatafuta mahali ulipo…');
 
-  navigator.geolocation.getCurrentPosition(
+  bestPosition().then(
     async (pos) => {
       const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
       try {
@@ -378,8 +412,7 @@ async function locate() {
       }[err.code] || `Kuna hitilafu ya GPS. Chagua mahali pako hapa chini.
             <span class="en">Something went wrong with GPS — choose your location below.</span>`;
       revealManual(why);
-    },
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    }
   );
 }
 
@@ -430,7 +463,8 @@ async function initManual() {
     mC.disabled = true; picked = null; $('m-out').hidden = true;
     if (!mR.value) return;
     wards = (await getWards(mR.value)).wards;
-    [...new Set(wards.map((w) => w.d))].sort().forEach((d) => mD.add(new Option(d, d)));
+    [...new Set(wards.map((w) => w.d))].sort((a, b) => a.localeCompare(b))
+      .forEach((d) => mD.add(new Option(d, d)));
     mD.disabled = false;
   };
   mD.onchange = () => {
@@ -451,9 +485,10 @@ async function initManual() {
     picked = w;
     // The postcode is a property of the ward, so it can be shown before a
     // village is picked -- often it is the only thing the visitor came for.
+    $('m-council').textContent = w.cn;
     $('m-postcode').innerHTML = w.pc
-      ? `${w.pc} <small>tanzaniapostcode.com — hakiki kama ni muhimu kisheria</small>`
-      : `<span class="none">hatuna kwa kata hii <small>not in our source</small></span>`;
+      ? `${w.pc} <small>si rasmi — thibitisha NaPA (Serikali)</small>`
+      : `<span class="none">hatuna kwa kata hii <small>tafuta NaPA</small></span>`;
     $('m-out').hidden = false;
     if (!w.v.length) {
       mV.innerHTML = '';
@@ -468,6 +503,7 @@ async function initManual() {
   mV.onchange = () => { mC.disabled = !mV.value; };
   mC.onclick = () => copy(mC, [
     `Mkoa: ${mR.selectedOptions[0].text}`, `Wilaya: ${mD.value}`,
+    ...(picked ? [`Halmashauri: ${picked.cn}`] : []),
     `Kata/Shehia: ${mW.value}`,
     `Kijiji/Mtaa: ${mV.value || '(hatuna orodha)'}`,
     ...(picked && picked.pc ? [`Msimbo wa posta: ${picked.pc}`] : []),
@@ -501,9 +537,10 @@ async function showVisits() {
   } catch { /* offline or service down — leave the counter hidden */ }
 }
 
-/* The ward polygons describe Tanzania's 2015 division. Render the age rather
- * than hard-coding it, so the page cannot quietly understate how old it is. */
-const BOUNDARY_YEAR = 2015;
+/* The ward polygons and the whole region/council/ward hierarchy come from the
+ * 2022 Population and Housing Census. Render the age rather than hard-coding
+ * it, so the page cannot quietly understate how old it is. */
+const BOUNDARY_YEAR = 2022;
 
 function showBoundaryAge() {
   const age = new Date().getFullYear() - BOUNDARY_YEAR;
@@ -511,13 +548,13 @@ function showBoundaryAge() {
   return age;
 }
 
-/* Per-region data-quality disclosure. Which wards were split after 2018 is
- * unknowable from what we have, so this reports what IS measurable: wards
- * falling back to the older 2015 boundaries, wards with no boundary at all, and
- * wards carried in without a village list. */
+/* Per-region data-quality disclosure. Every ward now has an official boundary
+ * and council, so the remaining gaps are in the two things NBS does not publish
+ * at this level: the village/mtaa list and the postcode. Both come from older
+ * sources joined on by name, so coverage is uneven and worth showing. */
 function showQuality(idx) {
   const rows = idx
-    .map((e) => ({ ...e, bad: e.old + e.nogeo + e.novill }))
+    .map((e) => ({ ...e, bad: e.novill + (e.wards - e.pc) }))
     .filter((e) => e.bad)
     .sort((a, b) => b.bad - a.bad);
   const box = $('qtable');
@@ -526,9 +563,9 @@ function showQuality(idx) {
   box.innerHTML = '';
   for (const e of rows) {
     const bits = [];
-    if (e.old) bits.push(`<span class="q-old">${e.old} kata: mipaka ya 2015</span>`);
-    if (e.nogeo) bits.push(`<span class="q-nogeo">${e.nogeo} kata: hakuna mipaka</span>`);
-    if (e.novill) bits.push(`<span class="q-novill">${e.novill} kata: hakuna vijiji</span>`);
+    if (e.novill) bits.push(`<span class="q-novill">${e.novill}/${e.wards} kata: hakuna orodha ya vijiji</span>`);
+    const noPc = e.wards - e.pc;
+    if (noPc) bits.push(`<span class="q-nopc">${noPc}/${e.wards} kata: hakuna msimbo wa posta</span>`);
     const row = document.createElement('div');
     row.className = 'qrow';
     row.innerHTML = `<span class="qname">${e.region}</span><span class="qbits">${bits.join(' · ')}</span>`;
@@ -560,6 +597,7 @@ getIndex().then((idx) => {
   $('cov').textContent = pct(sum('mapped'), sum('wards'));
   $('cov-v').textContent = pct(sum('located'), sum('villages'));
   $('cov-pc').textContent = pct(sum('pc'), sum('wards'));
+  $('cov-vw').textContent = pct(sum('wards') - sum('novill'), sum('wards'));
   showQuality(idx);
 }).catch((e) => console.error(e));
 

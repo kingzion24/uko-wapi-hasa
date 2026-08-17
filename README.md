@@ -1,10 +1,14 @@
 
 # Uko Wapi? — Tanzania location finder
 
-`data.json` is a list of Tanzania's administrative units down to village/street
-level: **30 regions → 169 districts → 3,641 wards/shehia → 16,408
-villages/mitaa**. The app serves **31 regions and 3,705 wards**, having carried in
-Songwe from a newer official source — see below.
+The app serves Tanzania's current administrative division, from the **2022
+Population and Housing Census**: **31 regions → 195 councils → 4,344
+wards/shehia**, every one with an official boundary and code.
+
+`data.json`, this repo's original contents, is an older list down to village
+level (**30 regions → 169 districts → 3,641 wards → 16,408 villages/mitaa**). It
+no longer defines the hierarchy — it only supplies the village/mtaa lists, which
+NBS does not publish at this level.
 
 `web/` is a small static site built on top of it. You tap one button, it reads
 your GPS, and it tells you which region, district and ward you are in, then
@@ -34,7 +38,7 @@ Pushing to `master` publishes the site:
 GitHub Pages. Nothing is rebuilt in CI — `web/data/` is committed, and the
 workflow only verifies that what is committed is self-consistent.
 
-The heavy rebuild (geoBoundaries + Overpass downloads) is a local task; see
+The heavy rebuild (NBS shapefile + Overpass downloads) is a local task; see
 [Rebuilding the data](#rebuilding-the-data).
 
 Custom domain: `web/CNAME` holds `ukowapi.site`. It must live in `web/`, since
@@ -46,18 +50,27 @@ lives in `web/`.
 
 ## How the lookup works
 
-`data.json` has no coordinates, so ward boundary polygons come from two sources,
-joined to its names at build time:
+One source defines the hierarchy and every boundary; two older ones fill in
+fields it does not carry.
 
 | Source | Year | Licence | Used for |
 |---|---|---|---|
-| Tanzania NBS / UN OCHA ([HDX COD-AB](https://data.humdata.org/dataset/cod-ab-tza)) | 2018 | CC BY-IGO | primary — 3,587 wards |
-| [geoBoundaries](https://www.geoboundaries.org/) ADM3 (OpenStreetMap) | 2015 | ODbL 1.0 | fallback — 73 wards |
-| [tanzaniapostcode.com](https://www.tanzaniapostcode.com/) | — | no stated licence | postcodes — 2,575 wards (69.5%) |
+| [NBS 2022 PHC ward shapefile](https://www.nbs.go.tz/statistics/topic/gis) | 2022 | cite NBS | **everything** — 31 regions, 195 councils, 4,344 wards, all polygons |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) place nodes | current | ODbL 1.0 | village/mtaa coordinates — 7,588 (50%) |
+| [tanzaniapostcode.com](https://www.tanzaniapostcode.com/) | — | no stated licence | postcodes — 3,053 wards (70.3%) |
 
-The 2018 set carries official P-codes and full ADM1/2/3 names, so those wards are
-matched on their hierarchy rather than by deriving parents spatially. Where a
-ward is missing from it, the 2015 polygon fills in.
+Village/mtaa **names** come from `data.json` and are joined to the 2022 wards by
+region + ward name; 3,395 of 4,344 wards (78%) match. Where they don't, the ward
+still resolves — it simply has no village list.
+
+### The projection trap
+
+The NBS `.prj` says `WGS_1984_World_Mercator`. That is **EPSG:3395, ellipsoidal**
+— *not* the EPSG:3857 spherical "Web Mercator" most tooling assumes. Reproject
+with the spherical formula and longitude comes out exact while latitude lands
+**~5 km north**, which is silent and puts points in the neighbouring ward.
+`build/nbs_geojson.py` uses pyproj with an explicit EPSG:3395 and refuses to
+write if the result falls outside Tanzania's bounding box.
 
 At runtime the browser loads:
 
@@ -89,6 +102,36 @@ installable to a home screen.
   instead of offering something that cannot work.
 - Honours `prefers-reduced-motion`; printing hides the map and buttons.
 
+## How precisely it can place you
+
+Two independent limits decide whether the answer is right.
+
+**The fix.** `navigator.geolocation` reports `coords.accuracy`, a 68%-confidence
+radius in metres. A phone's *first* callback is usually the coarse network
+estimate; the GPS chip then refines it, often from ±1500 m to ±10 m over a few
+seconds. `getCurrentPosition` hands back whichever arrives first, so the app uses
+`watchPosition` instead and keeps the best reading, stopping early at **±25 m**
+or after **8 s** (`bestPosition()` in `web/app.js`). The status line shows the
+radius tightening as it goes.
+
+**Ward size.** From the 2022 polygons:
+
+| | min | p10 | median | p90 |
+|---|---|---|---|---|
+| area | 0.07 km² | 3.7 km² | 83 km² | 422 km² |
+| radius if circular | 152 m | 1.1 km | 5.1 km | 11.6 km |
+
+For a median ward the boundary is ~5 km away and a 20 m fix is decisive. The risk
+is concentrated in the **278 wards under 2 km²** (6.4%) — inner Dar and Zanzibar
+Stone Town, the smallest about 150 m across, where a 100 m fix genuinely cannot
+separate neighbours. The ±25 m target is set below that smallest ward on purpose.
+
+So there is no single accuracy figure. What the app does instead is compare
+`distToBoundary()` against `coords.accuracy` on every result and say which case
+it is: comfortably inside, within the error margin of an edge (it then lists the
+neighbouring wards), or too coarse to trust at all (over 1.5 km, where it opens
+the manual picker rather than let a shaky answer stand).
+
 ## Accuracy, and what this is not
 
 `data.json` has exactly four levels, and `Village_Mtaa` **is** the street level —
@@ -103,11 +146,12 @@ preselects it. You can always override it.
 
 The app is explicit about uncertainty:
 
-- **3,660 of 3,705 wards (98.8%) have a polygon.** If your point falls in one of
-  the remaining 45, the app shows the nearest ward and says so.
+- **All 4,344 wards have an official polygon**, so a point inside Tanzania
+  resolves exactly. The nearest-ward fallback is capped at 10 km and otherwise
+  returns nothing, rather than naming a confident ward 30 km out at sea.
 - Each result states **which boundary set answered and how old it is**, plus the
-  official P-code when the 2018 source was used.
-- **8,632 of 16,408 villages (52.6%) have a coordinate**, and coverage is very
+  official NBS ward code.
+- **7,588 of 15,183 villages (50%) have a coordinate**, and coverage is very
   uneven — see below. Where a ward has none, the app says so and just shows the
   list.
 - If the GPS accuracy radius is wider than your distance to the ward boundary,
@@ -121,31 +165,33 @@ The app is explicit about uncertainty:
   cascade, so even a manual choice cannot produce an invalid
   region/district/ward combination.
 
-### The boundaries are still not current, and `data.json` is older still
+### Why the council used to be wrong
 
-No 2022 census ward boundaries are published under an open licence. The newest
-available anywhere is the **2018** NBS/OCHA set, which is what this now uses.
+Until this rebuild the site derived the district from `data.json`, which lists
+**30 regions, no Songwe, and only three Dar es Salaam councils**. That dates it
+to 2015 — before **Kigamboni** was split from Temeke (2015), **Ubungo** from
+Kinondoni (2016), and before Songwe was split from Mbeya (2016).
 
-The bigger problem is `data.json` itself. It lists **30 regions and no Songwe** —
-a region created in January 2016 — which dates the ward list to 2015. That is why
-swapping wholesale to the 2018 boundaries actually *lowered* name-match coverage
-(98.4% → 96.8%): the two 2015-era datasets agree with each other more than either
-agrees with 2018. Hence the hybrid.
+So a resident of Kimara was told **Kinondoni**. Kimara has been in Ubungo for a
+decade. The 2015 and 2018 boundary sets did not fix it either: the 2018 NBS/OCHA
+file still records `adm2 = Kinondoni` for Ubungo ward. Nothing short of the 2022
+census had the answer.
 
-Consequences to be aware of:
+The 2022 census file carries `dist_name` and `counc_name` as separate fields, so
+the site now shows both the short name a form asks for and the full legal council
+name beneath it. `build/test_data.js` pins this as a regression test.
 
-- **Songwe is fixed.** Its 64 wards are carried in from the 2018 source, so
-  someone there is told Songwe rather than the pre-2016 answer of Mbeya. Those
-  wards have no village list, and the app says so.
-- **Wards split after 2018 still resolve to their old parent**, silently. There is
-  no missing-polygon signal to warn on — it looks like a clean hit. This is the
-  one failure mode the app cannot detect.
-- 42 of the 3,643 2018 polygons matched no `data.json` ward and are dropped;
-  45 wards have no polygon from either source.
+Remaining limits:
 
-To go further, `data.json` needs replacing with a post-2022 ward list, not just
-the boundaries. `build/link2018.py` matches on region/district/ward names, so a
-newer list would slot in with only its reconciliation table changed.
+- **Wards split after 2022 still resolve to their old parent**, silently. There
+  is no missing-polygon signal to warn on — it looks like a clean hit. This is
+  the one failure mode the app cannot detect.
+- 950 of 4,344 wards get no village list, because `data.json` predates them or
+  names them differently.
+- NBS reuses **five ward codes** across distinct wards. Nothing is keyed on the
+  code; `test_data.js` pins the five so a sixth would fail the build.
+- 62 ward names repeat inside a single region. Postcodes for those are dropped
+  rather than guessed, since the source URLs cannot tell them apart.
 
 ### Village coverage is worst where it matters most
 
@@ -175,40 +221,40 @@ anyone can produce any result. Don't treat its output as evidence.
 bash build/build.sh
 ```
 
-Downloads both boundary sets and the OSM place data, joins them to `data.json`,
-simplifies the polygons with mapshaper, writes `web/data/`, and runs the tests.
-Needs
-`python3`, `node`/`npx` and `curl`.
+Downloads the NBS shapefile and the OSM place data, reprojects, simplifies the
+polygons with mapshaper, joins on villages and postcodes, writes `web/data/`, and
+runs the tests. Needs `python3`, `node`/`npx` and `curl`.
 
-| Script                 | Does                                                   |
-| ---------------------- | ------------------------------------------------------ |
-| `build/link.py`      | Joins the 2015 OSM ward polygons to`data.json` names |
-| `build/link2018.py`  | Joins the 2018 NBS polygons; carries in new regions    |
-| `build/villages.py`  | Gives villages/mitaa a coordinate from OSM             |
-| `build/web_data.py`  | Splits into per-region files for the web app           |
-| `build/test_geo.js`  | Towns resolve, foreign points do not, address formatting |
-| `build/test_markup.js` | Every id app.js uses exists; no third-party assets   |
-| `build/test_data.js` | Verifies`web/data` round-trips `data.json` exactly |
+| Script                  | Does                                                     |
+| ----------------------- | -------------------------------------------------------- |
+| `build/nbs_geojson.py`  | NBS shapefile → WGS84 GeoJSON (EPSG:3395, bbox-guarded)   |
+| `build/names.py`        | Name normalisation shared by every join                   |
+| `build/postcodes.py`    | Joins postcodes to wards from the tanzaniapostcode sitemap |
+| `build/villages.py`     | Gives villages/mitaa a coordinate from OSM                |
+| `build/nbs2022.py`      | Writes the per-region files the web app loads             |
+| `build/test_geo.js`     | Towns resolve, foreign points do not, address formatting  |
+| `build/test_markup.js`  | Every id app.js uses exists; no third-party assets        |
+| `build/test_data.js`    | Structure, containment, national totals, council splits   |
 
 ### The join
 
-ADM3 features carry only a ward name, and ward names are not unique nationally,
-so each ward's parent is derived spatially before matching the name. Two things
-made this fiddly:
+NBS owns the hierarchy; `data.json` only contributes village names, matched on
+region + ward. Ward names are not unique nationally, so the key is always
+`(region, ward)`, never ward alone. Two things make it fiddly:
 
 - **Name variants.** `Levolosi`/`Levolos`, `Gongolamboto`/`Gongo la Mboto`,
   `Usariver`/`Usa River`, plus ~2,000 wards where `data.json` appends
-  `" Ward"`/`" Shehia"`. Handled by normalisation plus a fuzzy match with a
-  minimum score of 88.
-- **Wrong parents near borders.** The ADM1 and ADM2 layers disagree slightly
-  around Dar es Salaam and Arusha, putting Ilala in Pwani and Monduli in
-  Manyara. A ward that fails to match in its assigned region falls back to a
-  national name search and is accepted when the name resolves unambiguously.
+  `" Ward"`/`" Shehia"` and NBS does not. That single suffix once cost about 75%
+  of all postcode matches. Handled in `build/names.py`.
+- **Repeated ward names inside one region.** 62 of them. Where several
+  `data.json` wards could feed one NBS ward, only a district agreement is
+  accepted; otherwise nothing is attached, because another council's villages
+  are worse than no villages.
 
-Result: 3,597 of 3,644 polygons linked (3,496 exact, 101 fuzzy).
-
-One row of `data.json` (`Mara / Musoma / <blank> / Mikuyu`) has a blank ward and
-is dropped at build time, so it cannot become an empty form field.
+`test_data.js` enforces **containment, not round-tripping**: every village shown
+must exist in `data.json`, but `data.json` may hold wards NBS has since renamed,
+merged or split away. Asserting an exact round-trip would now be asserting that
+the stale list is right.
 
 ## Postcodes
 
@@ -234,8 +280,13 @@ crawled**. The postcode is constant across a ward's locations, so it joins at
 ward level. `build/postcodes.py` matches their slugs against our own ward names
 (theirs omit the `" Ward"`/`" Shehia"` suffix ours carry, and their district
 names differ — their `arumeru` is our `meru`, so the match is on region + ward
-with the district only breaking ties). 2,575 of 3,705 wards resolve; where a
-majority of a ward's records disagree, the ward is dropped rather than guessed.
+with the district only breaking ties). **3,053 of 4,344 wards (70.3%) resolve.**
+Where a majority of a ward's records disagree, or where two wards in one region
+share a name, the ward is dropped rather than guessed.
+
+Keying these to the NBS ward rather than to a `data.json` triple is what let
+Songwe get postcodes at all — 85 of its 94 wards now have one, where previously
+it could have none, because Songwe does not appear in `data.json`.
 
 It is a third-party aggregator, not Tanzania Posts Corporation, so it was
 cross-checked against an independent source: the 913 well-formed `addr:postcode`
@@ -244,10 +295,10 @@ regions use a single consistent prefix. The one disagreement is Songwe (site
 `54`, OSM `35`) — `35` is Kagera's prefix and Songwe is nowhere near Kagera, so
 a bad OSM import is the likelier explanation, but it is unverified.
 
-The page states it is not an official postal source and points to posta.co.tz
-for anything legally significant. Note the `TZ…` code also shown is an OCHA
-statistical P-code, **not** postal — the two are labelled distinctly so they
-cannot be confused.
+The page states it is not an official postal source and points to NaPA for
+anything legally significant. Note the NBS ward code also shown is a statistical
+identifier, **not** postal — the two are labelled distinctly so they cannot be
+confused.
 
 ## Address format
 
@@ -293,12 +344,13 @@ analytics use [GoatCounter](https://www.goatcounter.com/) (free, cookieless).
 
 ## Attribution
 
-Ward boundaries, primary: **Tanzania National Bureau of Statistics / UN OCHA
-ROSA**, via [HDX](https://data.humdata.org/dataset/cod-ab-tza), licensed
-**CC BY-IGO** (attribution).
-
-Ward boundaries, fallback: [geoBoundaries](https://www.geoboundaries.org/) ADM3,
-derived from OpenStreetMap, licensed **ODbL 1.0** (attribution + share-alike).
+Regions, councils, wards and all boundaries: **Tanzania National Bureau of
+Statistics, 2022 Population and Housing Census** —
+[ward shapefile](https://www.nbs.go.tz/statistics/topic/gis). NBS asks to be
+cited. Note their [microdata catalogue entry](https://microdata.nbs.go.tz/index.php/catalog/49)
+mentions a confidentiality declaration for census microdata; this ward file is
+offered as a public download on their GIS page, and levels below ward (villages,
+enumeration areas) require a written request.
 
 Village points: OpenStreetMap, **ODbL 1.0**. Map tiles: OpenStreetMap.
 

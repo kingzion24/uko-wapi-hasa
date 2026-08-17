@@ -30,14 +30,20 @@ for (const t of ['html', 'head', 'body', 'main', 'footer', 'section', 'div',
 }
 
 // --- local assets only -------------------------------------------------
-const remote = [...html.matchAll(/(?:src|href)="(https?:\/\/[^"]+)"/g)]
-  .map((m) => m[1])
-  .filter((u) => !/^https:\/\/(www\.geoboundaries|data\.humdata|www\.openstreetmap|www\.linkedin|www\.tanzaniapostcode|www\.posta|napa\.mawasiliano)/.test(u))
-  .filter((u) => !u.startsWith('https://ukowapi.site/'));   // canonical, not a request
+// Only flag markup that makes the browser fetch something. An <a href> to
+// another site is a link the reader may click, not a request the page issues,
+// so listing every cited source in an allowlist was the wrong check -- it made
+// adding a citation fail the build.
+const fetched = [
+  ...[...html.matchAll(/<(?:img|script|iframe|source|embed|video|audio)\b[^>]*?\bsrc="([^"]+)"/gi)],
+  ...[...html.matchAll(/<link\b[^>]*?\bhref="([^"]+)"/gi)],
+].map((m) => m[1]);
+const remote = fetched.filter((u) => /^https?:\/\//.test(u) && !u.startsWith('https://ukowapi.site/'));
 if (remote.length) bad(`third-party asset requests: ${remote.join(', ')}`);
+console.log(`assets fetched by the page: ${fetched.length}, all local`);
 
 // --- local files referenced actually exist -----------------------------
-for (const rel of [...html.matchAll(/(?:src|href)="(?!https?:|mailto:|#)([^"]+)"/g)].map((m) => m[1])) {
+for (const rel of [...html.matchAll(/(?:src|href)="(?!https?:|mailto:|#|data:)([^"]+)"/g)].map((m) => m[1])) {
   if (!fs.existsSync(path.join(ROOT, 'web', rel))) bad(`missing file: ${rel}`);
 }
 

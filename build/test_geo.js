@@ -50,10 +50,10 @@ function resolve(lng, lat) {
   return best;
 }
 
-// [name, lat, lng, expected region]
+// [name, lat, lng, expected region, expected district (optional)]
 const CASES = [
   ['Dodoma city centre',        -6.1722, 35.7395, 'Dodoma'],
-  ['Kariakoo, Dar es Salaam',   -6.8161, 39.2803, 'Dar es Salaam Region'],
+  ['Kariakoo, Dar es Salaam',   -6.8161, 39.2803, 'Dar es Salaam', 'Ilala'],
   ['Arusha clock tower',        -3.3689, 36.6829, 'Arusha'],
   ['Mwanza city',               -2.5164, 32.9175, 'Mwanza'],
   ['Stone Town, Zanzibar',      -6.1659, 39.1917, 'Mjini Magharibi'],
@@ -61,39 +61,47 @@ const CASES = [
   ['Moshi',                     -3.3349, 37.3408, 'Kilimanjaro'],
   ['Morogoro town',             -6.8221, 37.6612, 'Morogoro'],
   ['Tanga city',                -5.0689, 39.0988, 'Tanga'],
-  ['Mtwara town',              -10.2667, 40.1833, 'Mtwara Region'],
+  ['Mtwara town',              -10.2667, 40.1833, 'Mtwara'],
   ['Kigoma town',               -4.8769, 29.6267, 'Kigoma'],
   ['Chake Chake, Pemba',        -5.2456, 39.7666, 'Kusini Pemba'],
   ['Songea',                   -10.6833, 35.6500, 'Ruvuma'],
   ['Iringa town',               -7.7700, 35.6900, 'Iringa'],
   ['Sumbawanga',                -7.9667, 31.6167, 'Rukwa'],
   ['Bukoba',                    -1.3316, 31.8121, 'Kagera'],
-  // Songwe region was created in 2016 by splitting Mbeya. The 2015 boundaries
-  // do not know it exists, so these must not come back as Mbeya.
+  // Songwe region was created in 2016 by splitting Mbeya. Sources older than
+  // the 2022 census do not know it exists, so these must not come back Mbeya.
   ['Vwawa, Songwe',             -9.1000, 32.9333, 'Songwe'],
   ['Tunduma, Songwe',           -9.3000, 32.7667, 'Songwe'],
+  // Councils created in 2015-16 by splitting Kinondoni and Temeke. Every
+  // pre-2022 source still files these wards under the old parent, which is
+  // what made the site tell a resident of Kimara they were in Kinondoni.
+  // Coordinates are interior points of the ward polygons themselves.
+  ['Kimara (Ubungo split)',     -6.80530, 39.17045, 'Dar es Salaam', 'Ubungo'],
+  ['Saranga (Ubungo split)',    -6.78978, 39.15154, 'Dar es Salaam', 'Ubungo'],
+  ['Ubungo ward',               -6.78346, 39.20099, 'Dar es Salaam', 'Ubungo'],
+  ['Kigamboni (Temeke split)',  -6.82568, 39.31093, 'Dar es Salaam', 'Kigamboni'],
 ];
 
 let pass = 0, fail = 0;
 console.log('point-in-polygon resolution\n');
-for (const [name, lat, lng, want] of CASES) {
+for (const [name, lat, lng, want, wantDist] of CASES) {
   const t0 = process.hrtime.bigint();
   const r = resolve(lng, lat);
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
   if (!r) { console.log(`  FAIL ${name}: no result`); fail++; continue; }
-  const ok = r.region === want;
+  const ok = r.region === want && (!wantDist || r.ward.d === wantDist);
   ok ? pass++ : fail++;
   const edge = r.ward.g ? Math.round(distToBoundary(lng, lat, r.ward.g)) : '?';
-  const src = r.ward.s || '?';
   const g = guessVillage(r.ward, lng, lat);
   const located = (r.ward.c || []).filter(Boolean).length;
   console.log(
     `  ${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(26)} ${r.region} / ${r.ward.d} / ${r.ward.w} / ` +
     (g ? `${g.name} (${fmtDist(g.d)})` : '[no village coords]')
   );
+  console.log(`         ${r.ward.cn}`);
   console.log(`         ${r.ward.v.length} villages, ${located} located, ${edge}m to ward edge, ` +
-              `src=${src}, ${r.exact ? 'exact' : 'NEAREST'}, ${ms.toFixed(0)}ms`);
-  if (!ok) console.log(`       expected region ${want}`);
+              `code=${r.ward.code}, ${r.exact ? 'exact' : 'NEAREST'}, ${ms.toFixed(0)}ms`);
+  if (!ok) console.log(`       expected ${want}${wantDist ? ` / ${wantDist}` : ''}`);
 }
 
 // Points outside Tanzania must resolve to nothing at all. The nearest-ward
