@@ -55,25 +55,23 @@
 </head>
 <body>
 <main>
-  <header>
-    <div class="topbar">
-      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false"
-        aria-label="Badilisha mwonekano: mweupe au wa giza — Switch between light and dark mode">
-        <svg class="i-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-        </svg>
-        <svg class="i-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      </button>
-    </div>
+  <header class="navbar">
     <h1>Uko wapi hasa? <small>Mkoa, wilaya, kata na kijiji lako</small></h1>
-    <p class="sub">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.
-      <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false"
+      aria-label="Badilisha mwonekano: mweupe au wa giza — Switch between light and dark mode">
+      <svg class="i-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+      </svg>
+      <svg class="i-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+    </button>
   </header>
+  <p class="sub">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.
+    <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
 
   <p class="visits" id="visits" hidden>
     <span class="dot" aria-hidden="true"></span>
@@ -154,10 +152,16 @@
           <span class="en">For filling a form on someone else's behalf, or finding a
             place's postcode. You need to know its region and district.</span></p>
 
-        <label>Mkoa <small>Region</small><select id="m-region"></select></label>
-        <label>Wilaya <small>District</small><select id="m-district" disabled></select></label>
-        <label>Kata / Shehia <small>Ward</small><select id="m-ward" disabled></select></label>
-        <label>Kijiji / Mtaa <small>Village</small><select id="m-village" disabled></select></label>
+        <div class="fields form">
+          <div class="row"><dt><label for="m-region">Mkoa <small>Region</small></label></dt>
+            <dd><select id="m-region"></select></dd></div>
+          <div class="row"><dt><label for="m-district">Wilaya <small>District</small></label></dt>
+            <dd><select id="m-district" disabled></select></dd></div>
+          <div class="row"><dt><label for="m-ward">Kata / Shehia <small>Ward</small></label></dt>
+            <dd><select id="m-ward" disabled></select></dd></div>
+          <div class="row"><dt><label for="m-village">Kijiji / Mtaa <small>Village</small></label></dt>
+            <dd><select id="m-village" disabled></select></dd></div>
+        </div>
 
         <dl class="fields" id="m-out" hidden>
           <div class="row"><dt>Halmashauri <small>Council</small></dt>
