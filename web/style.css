@@ -79,16 +79,19 @@ main { max-width: 36rem; margin: 0 auto; padding: 0 1.1rem 3rem; }
   background: var(--card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--glass-border);
 }
-.theme-toggle {
-  width: 2.35rem; height: 2.35rem; padding: 0; flex: none; margin-top: .1rem;
+.nav-controls { display: flex; align-items: center; gap: .5rem; flex: none; margin-top: .1rem; }
+.theme-toggle, .lang-toggle {
+  width: 2.35rem; height: 2.35rem; padding: 0; flex: none;
   display: flex; align-items: center; justify-content: center;
   background: var(--card-solid); border: 1px solid var(--glass-border); color: var(--ink);
-  box-shadow: var(--sh-card);
+  box-shadow: var(--sh-card); font-size: .78rem; font-weight: 700; letter-spacing: -.01em;
 }
 .theme-toggle svg { width: 1.1rem; height: 1.1rem; }
 .theme-toggle .i-moon { display: none; }
 :root[data-theme="dark"] .theme-toggle .i-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .i-moon { display: block; }
+/* The button label names the OTHER language — the one tapping it switches
+   to — and is driven by the same .t-sw/.en rule as everything else below. */
 
 h1 {
   font-size: clamp(1.55rem, 5.5vw, 2.05rem); font-weight: 700;
@@ -97,7 +100,13 @@ h1 {
 h1 small { font-size: .44em; font-weight: 600; letter-spacing: -.01em; margin-top: .35rem; color: var(--muted); }
 .sub { color: var(--muted); margin: 1rem 0 1.4rem; font-size: .98rem; line-height: 1.55; }
 small { display: block; font-weight: 400; font-size: .78em; opacity: .7; }
-.en { display: block; font-style: italic; opacity: .75; margin-top: .15rem; }
+
+/* ---------- language toggle ----------
+   Swahili is the default (shown), English is the alternate (hidden) — a real
+   single-language reading mode, not a bilingual dual-visible layout. Every
+   .t-sw/.en pair lives in the same parent, so hiding one never leaves a gap. */
+:root[data-lang="en"] .t-sw { display: none; }
+:root:not([data-lang="en"]) .en { display: none; }
 
 button {
   font: inherit; cursor: pointer; border-radius: var(--r-pill);
@@ -183,9 +192,7 @@ dd small { display: block; font-size: .72em; opacity: .7; font-weight: 400; }
   padding: 1.15rem 1.2rem; font-size: .92rem;
 }
 .outside h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.02em; margin: 0 0 .55rem; }
-.outside h2 small { display: inline; margin-left: .4rem; font-weight: 500; }
 .outside p { margin: .55rem 0; color: var(--muted); line-height: 1.6; }
-.outside .sw { font-style: italic; }
 .outside strong { color: var(--ink); }
 
 .warn {
@@ -247,7 +254,7 @@ summary small { display: inline; margin-left: .35rem; }
   select { padding: .75rem .7rem; font-size: 16px; min-height: 44px; }
   summary { padding: .25rem 0; }
   #alts-body button { min-height: 44px; }
-  .theme-toggle { width: 44px; height: 44px; }
+  .theme-toggle, .lang-toggle { width: 44px; height: 44px; }
 }
 
 /* Narrow phones: labels above values instead of a cramped two-column grid. */
@@ -382,4 +389,4 @@ footer code { font-size: .95em; background: var(--card-solid);
 .disclaimer ul { margin: .55rem 0 .65rem; padding-left: 1.15rem; display: grid; gap: .4rem; }
 .disclaimer li { line-height: 1.6; }
 .disclaimer strong { color: var(--ink); }
-.disclaimer .en { border-top: 1px solid var(--line); padding-top: .65rem; margin-top: .15rem; }
+.disclaimer p.en { margin: .55rem 0 0; line-height: 1.6; }

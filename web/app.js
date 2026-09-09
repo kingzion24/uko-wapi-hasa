@@ -13,6 +13,14 @@ let INDEX = null, REGIONS = null;
 const wardCache = new Map();
 let map, marker, accCircle, wardLayer, villageMarker;
 let current = null; // {region, district, ward, villages}
+let lastRender = null; // {res, lat, lng, acc} of the most recent render(), for re-translating in place
+let lastIndex = null; // the loaded index.json, for re-rendering the footer quality table
+
+/* ---------- language ---------- */
+// Default is Swahili. LANG mirrors the data-lang attribute the pre-paint
+// script in index.html may already have set from localStorage.
+let LANG = document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'sw';
+const isEn = () => LANG === 'en';
 
 /* ---------- data loading ---------- */
 
@@ -158,26 +166,28 @@ function fillVillages(sel, ward, lng, lat) {
 
   // Wards from a region data.json does not cover (Songwe) have no village list.
   if (!items.length) {
-    sel.add(new Option('— hatuna orodha ya vijiji —', ''));
+    sel.add(new Option(isEn() ? '— no village list —' : '— hatuna orodha ya vijiji —', ''));
     sel.disabled = true;
     return null;
   }
   sel.disabled = false;
 
   if (!known.length) {
-    if (items.length > 1) sel.add(new Option(`— chagua kati ya ${items.length} —`, ''));
+    if (items.length > 1) {
+      sel.add(new Option(isEn() ? `— choose from ${items.length} —` : `— chagua kati ya ${items.length} —`, ''));
+    }
     rest.forEach((x) => sel.add(new Option(x.name, x.name)));
     if (items.length === 1) sel.value = items[0].name;
     return null;
   }
 
   const near = document.createElement('optgroup');
-  near.label = 'Karibu na wewe / Nearest';
-  known.forEach((x) => near.append(new Option(`${x.name} — ${fmtDist(x.d)}`, x.name)));
+  near.label = isEn() ? 'Nearest' : 'Karibu na wewe';
+  known.forEach((x) => near.append(new Option(`${x.name} — ${fmtDist(x.d, LANG)}`, x.name)));
   sel.add(near);
   if (rest.length) {
     const other = document.createElement('optgroup');
-    other.label = 'Nyingine katika kata hii / Others in this ward';
+    other.label = isEn() ? 'Others in this ward' : 'Nyingine katika kata hii';
     rest.forEach((x) => other.append(new Option(x.name, x.name)));
     sel.add(other);
   }
@@ -189,17 +199,23 @@ function fillVillages(sel, ward, lng, lat) {
  * lives in geo.js as addressBlock(). */
 function statement() {
   const v = $('f-village').value;
+  const L = isEn()
+    ? { region: 'Region', district: 'District', council: 'Council', ward: 'Ward/Shehia',
+        village: 'Village/Mtaa', none: '(not chosen)', pc: 'Postcode' }
+    : { region: 'Mkoa', district: 'Wilaya', council: 'Halmashauri', ward: 'Kata/Shehia',
+        village: 'Kijiji/Mtaa', none: '(hujachagua)', pc: 'Msimbo wa posta' };
   return [
-    `Mkoa: ${current.region}`,
-    `Wilaya: ${current.district}`,
-    `Halmashauri: ${current.council}`,
-    `Kata/Shehia: ${current.ward}`,
-    `Kijiji/Mtaa: ${v || '(hujachagua)'}`,
-    ...(current.pc ? [`Msimbo wa posta: ${current.pc}`] : []),
+    `${L.region}: ${current.region}`,
+    `${L.district}: ${current.district}`,
+    `${L.council}: ${current.council}`,
+    `${L.ward}: ${current.ward}`,
+    `${L.village}: ${v || L.none}`,
+    ...(current.pc ? [`${L.pc}: ${current.pc}`] : []),
   ].join('\n');
 }
 
 async function render(res, lat, lng, acc) {
+  lastRender = { res, lat, lng, acc };
   const w = res.ward;
   current = { region: res.region, district: w.d, council: w.cn, ward: w.w, pc: w.pc };
 
@@ -211,32 +227,42 @@ async function render(res, lat, lng, acc) {
   $('f-ward').textContent = w.w;
   const napa = '<a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>';
   $('f-postcode').innerHTML = w.pc
-    ? `${w.pc} <small>si rasmi — thibitisha ${napa} (Serikali)</small>`
-    : `<span class="none">hatuna kwa kata hii <small>tafuta ${napa}</small></span>`;
+    ? isEn()
+      ? `${w.pc} <small>unofficial — confirm with ${napa} (Government)</small>`
+      : `${w.pc} <small>si rasmi — thibitisha ${napa} (Serikali)</small>`
+    : isEn()
+      ? `<span class="none">none for this ward <small>look up ${napa}</small></span>`
+      : `<span class="none">hatuna kwa kata hii <small>tafuta ${napa}</small></span>`;
 
   const guess = fillVillages($('f-village'), w, lng, lat);
   if (guess) {
-    $('v-note').innerHTML = `Tumekisia <strong>${guess.name}</strong> — kituo chake kiko
-      ${fmtDist(guess.d)} kutoka ulipo. Badilisha kama si sahihi.
-      <span class="en">Best guess by distance — change it if that's not right.</span>`;
+    $('v-note').innerHTML = isEn()
+      ? `Best guess: <strong>${guess.name}</strong> — its point is ${fmtDist(guess.d, LANG)}
+         from where you are. Change it if that's not right.`
+      : `Tumekisia <strong>${guess.name}</strong> — kituo chake kiko
+         ${fmtDist(guess.d, LANG)} kutoka ulipo. Badilisha kama si sahihi.`;
   } else if (!w.v.length) {
-    $('v-note').innerHTML = `Orodha yetu ya vijiji haijumuishi kata hii bado, hivyo jaza
-      kijiji/mtaa mwenyewe kwenye fomu yako.
-      <span class="en">Our village list does not cover this ward yet — fill the
-      village/mtaa in yourself.</span>`;
+    $('v-note').innerHTML = isEn()
+      ? `Our village list does not cover this ward yet — fill the village/mtaa in yourself.`
+      : `Orodha yetu ya vijiji haijumuishi kata hii bado, hivyo jaza
+         kijiji/mtaa mwenyewe kwenye fomu yako.`;
   } else {
-    $('v-note').innerHTML = `Hatuna ramani ya vijiji vya kata hii. Chagua chako kwenye orodha.
-      <span class="en">No village coordinates for this ward — pick yours from the list.</span>`;
+    $('v-note').innerHTML = isEn()
+      ? `No village coordinates for this ward — pick yours from the list.`
+      : `Hatuna ramani ya vijiji vya kata hii. Chagua chako kwenye orodha.`;
   }
 
   // Say which boundary set answered, and how old it is.
   const age = new Date().getFullYear() - BOUNDARY_YEAR;
-  $('src-note').innerHTML = `Mipaka ya kata: Sensa ya Watu na Makazi ${BOUNDARY_YEAR},
-     Ofisi ya Taifa ya Takwimu (NBS) — miaka ${age} iliyopita.
-     Msimbo wa kata wa takwimu: <strong>${w.code}</strong> —
-     <strong>huu si msimbo wa posta.</strong>
-     <span class="en">Ward boundary and council from the ${BOUNDARY_YEAR} Population and
-       Housing Census. The ward code is a statistical identifier, not a postcode.</span>`;
+  $('src-note').innerHTML = isEn()
+    ? `Ward boundary: ${BOUNDARY_YEAR} Population and Housing Census,
+       National Bureau of Statistics (NBS) — ${age} years ago.
+       Statistical ward code: <strong>${w.code}</strong> —
+       <strong>this is not a postcode.</strong>`
+    : `Mipaka ya kata: Sensa ya Watu na Makazi ${BOUNDARY_YEAR},
+       Ofisi ya Taifa ya Takwimu (NBS) — miaka ${age} iliyopita.
+       Msimbo wa kata wa takwimu: <strong>${w.code}</strong> —
+       <strong>huu si msimbo wa posta.</strong>`;
 
   // Prefill a report with everything needed to diagnose a wrong ward. Users
   // will not think to include coordinates, and without them a report is
@@ -263,8 +289,9 @@ async function render(res, lat, lng, acc) {
   const note = $('v-note').innerHTML;
   $('f-village').onchange = (e) => {
     $('v-note').innerHTML = (guess && e.target.value !== guess.name)
-      ? `Umechagua <strong>${e.target.value}</strong> mwenyewe.
-         <span class="en">Your own choice, not our guess.</span>`
+      ? isEn()
+        ? `Your own choice: <strong>${e.target.value}</strong> — not our guess.`
+        : `Umechagua <strong>${e.target.value}</strong> mwenyewe.`
       : note;
   };
 
@@ -280,23 +307,31 @@ async function render(res, lat, lng, acc) {
   if (acc > 1500) {
     // Typically wifi/IP positioning on a laptop rather than a real GPS fix.
     warn.hidden = false;
-    warn.innerHTML = `<strong>Kifaa chako hakikupata GPS halisi.</strong>
-      Usahihi ni ±${(acc / 1000).toFixed(1)} km, hivyo kata iliyoonyeshwa inaweza kuwa si sahihi kabisa.
-      Tumia simu ukiwa nje kwa usahihi zaidi.
-      <span class="en">Accuracy is ±${(acc / 1000).toFixed(1)} km — this is a network estimate,
-      not a GPS fix. Verify before using.</span>`;
+    warn.innerHTML = isEn()
+      ? `<strong>Your device did not get a real GPS fix.</strong>
+         Accuracy is ±${(acc / 1000).toFixed(1)} km — this is a network estimate, not a GPS
+         fix, so the ward shown could be quite wrong. Use a phone outdoors for accuracy.`
+      : `<strong>Kifaa chako hakikupata GPS halisi.</strong>
+         Usahihi ni ±${(acc / 1000).toFixed(1)} km, hivyo kata iliyoonyeshwa inaweza kuwa si sahihi kabisa.
+         Tumia simu ukiwa nje kwa usahihi zaidi.`;
   } else if (!res.exact) {
     warn.hidden = false;
-    warn.innerHTML = `<strong>Hatuna uhakika kamili.</strong>
-      Hakuna mpaka wa kata unaokuzunguka hapa — tumekuonyesha kata iliyo karibu zaidi
-      (mita ${Math.round(res.dist)}). Hakiki kabla ya kutumia.
-      <span class="en">No ward boundary covers this point; showing the nearest ward instead. Please verify.</span>`;
+    warn.innerHTML = isEn()
+      ? `<strong>We're not fully certain.</strong>
+         No ward boundary covers this point — showing the nearest ward instead
+         (${Math.round(res.dist)} m away). Please verify before using it.`
+      : `<strong>Hatuna uhakika kamili.</strong>
+         Hakuna mpaka wa kata unaokuzunguka hapa — tumekuonyesha kata iliyo karibu zaidi
+         (mita ${Math.round(res.dist)}). Hakiki kabla ya kutumia.`;
   } else if (edge < acc) {
     warn.hidden = false;
-    warn.innerHTML = `<strong>Uko karibu na mpaka wa kata.</strong>
-      Mpaka uko mita ${Math.round(edge)} tu, lakini GPS yako ina hitilafu ya ±${Math.round(acc)} m.
-      Hakiki kata yako hapa chini.
-      <span class="en">You are within the GPS error margin of a ward boundary — check the nearby wards below.</span>`;
+    warn.innerHTML = isEn()
+      ? `<strong>You're close to a ward boundary.</strong>
+         The boundary is only ${Math.round(edge)} m away, but your GPS has a ±${Math.round(acc)} m
+         margin of error. Check your ward below.`
+      : `<strong>Uko karibu na mpaka wa kata.</strong>
+         Mpaka uko mita ${Math.round(edge)} tu, lakini GPS yako ina hitilafu ya ±${Math.round(acc)} m.
+         Hakiki kata yako hapa chini.`;
   } else {
     warn.hidden = true;
   }
@@ -307,7 +342,9 @@ async function render(res, lat, lng, acc) {
     $('alts-body').innerHTML = '';
     for (const a of alts) {
       const b = document.createElement('button');
-      b.innerHTML = `<strong>${a.w.w}</strong> — ${a.w.d} <small>mita ${Math.round(a.d)} kutoka hapa</small>`;
+      b.innerHTML = isEn()
+        ? `<strong>${a.w.w}</strong> — ${a.w.d} <small>${Math.round(a.d)} m from here</small>`
+        : `<strong>${a.w.w}</strong> — ${a.w.d} <small>mita ${Math.round(a.d)} kutoka hapa</small>`;
       b.onclick = () => render({ region: a.region, slug: res.slug, ward: a.w, exact: true }, lat, lng, acc);
       $('alts-body').append(b);
     }
@@ -329,10 +366,12 @@ function adaptToDevice() {
   if (navigator.geolocation) return;
   $('locate').hidden = true;
   $('desk-note').hidden = true;
-  setStatus('Kivinjari chako hakiruhusu GPS.', true);
-  revealManual(`Kivinjari chako hakina huduma ya GPS, hivyo huwezi kupimwa kiotomatiki.
-    Chagua mahali pako hapa chini.
-    <span class="en">Your browser has no geolocation support — choose your location below.</span>`);
+  setStatus(isEn() ? 'Your browser does not support GPS.' : 'Kivinjari chako hakiruhusu GPS.', true);
+  revealManual(isEn()
+    ? `Your browser has no geolocation support, so you can't be located automatically.
+       Choose your location below.`
+    : `Kivinjari chako hakina huduma ya GPS, hivyo huwezi kupimwa kiotomatiki.
+       Chagua mahali pako hapa chini.`);
 }
 
 /* A phone's first fix is usually the coarse network one; the GPS chip then
@@ -360,7 +399,9 @@ function bestPosition() {
       (pos) => {
         if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
         if (best.coords.accuracy <= GOOD_ENOUGH_M) finish();
-        else setStatus(`Inaboresha usahihi… ±${Math.round(best.coords.accuracy)} m`);
+        else setStatus(isEn()
+          ? `Improving accuracy… ±${Math.round(best.coords.accuracy)} m`
+          : `Inaboresha usahihi… ±${Math.round(best.coords.accuracy)} m`);
       },
       (err) => { if (!best) { done = true; clearTimeout(timer); navigator.geolocation.clearWatch(id); reject(err); } },
       { enableHighAccuracy: true, timeout: WATCH_MS, maximumAge: 0 }
@@ -375,13 +416,13 @@ async function locate() {
   btn.disabled = true;
   btn.classList.add('busy');
   $('outside').hidden = true;
-  setStatus('Inatafuta mahali ulipo…');
+  setStatus(isEn() ? 'Finding your location…' : 'Inatafuta mahali ulipo…');
 
   bestPosition().then(
     async (pos) => {
       const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
       try {
-        setStatus('Inalinganisha na mipaka ya kata…');
+        setStatus(isEn() ? 'Matching it against ward boundaries…' : 'Inalinganisha na mipaka ya kata…');
         const res = await resolve(lng, lat);
         if (!res) {
           setStatus('');
@@ -398,13 +439,17 @@ async function locate() {
           // A fix this coarse is a network estimate, not GPS; offer the picker
           // alongside the result rather than leaving a shaky answer to stand.
           if (acc > 1500) {
-            revealManual(`GPS yako ilikuwa na hitilafu ya ±${(acc / 1000).toFixed(1)} km, hivyo jibu
-              lililo juu linaweza kukosea. Ukijua mahali pako, chagua hapa chini.
-              <span class="en">That fix was too coarse to trust — set your location manually if you know it.</span>`);
+            revealManual(isEn()
+              ? `Your GPS fix had an error of ±${(acc / 1000).toFixed(1)} km, so the result above
+                 could be wrong. If you know your location, choose it below.`
+              : `GPS yako ilikuwa na hitilafu ya ±${(acc / 1000).toFixed(1)} km, hivyo jibu
+                 lililo juu linaweza kukosea. Ukijua mahali pako, chagua hapa chini.`);
           }
         }
       } catch (e) {
-        setStatus('Imeshindikana kupakua data ya kata. Angalia intaneti yako.', true);
+        setStatus(isEn()
+          ? 'Could not download ward data. Check your internet connection.'
+          : 'Imeshindikana kupakua data ya kata. Angalia intaneti yako.', true);
         console.error(e);
       } finally {
         btn.disabled = false;
@@ -414,23 +459,27 @@ async function locate() {
     (err) => {
       btn.disabled = false;
       btn.classList.remove('busy');
-      const msg = {
-        1: 'Umekataa ruhusa ya GPS.',
-        2: 'Mahali hapapatikani. Jaribu nje ya jengo.',
-        3: 'Muda umeisha. Jaribu tena.',
-      }[err.code] || 'Hitilafu ya GPS.';
+      const msg = isEn()
+        ? { 1: 'You denied GPS permission.', 2: 'Location unavailable. Try outdoors.', 3: 'Timed out. Try again.' }[err.code]
+          || 'GPS error.'
+        : { 1: 'Umekataa ruhusa ya GPS.', 2: 'Mahali hapapatikani. Jaribu nje ya jengo.', 3: 'Muda umeisha. Jaribu tena.' }[err.code]
+          || 'Hitilafu ya GPS.';
       setStatus(msg, true);
-      const why = {
-        1: `Umekataa ruhusa ya GPS. Unaweza kuiruhusu kwenye mipangilio ya kivinjari na kubonyeza
-            tena, au chagua mahali pako hapa chini.
-            <span class="en">Location permission was denied — allow it and retry, or choose below.</span>`,
-        2: `Hatukuweza kupata mahali ulipo — mara nyingi hii hutokea ukiwa ndani ya jengo.
-            Jaribu tena ukiwa nje, au chagua mahali pako hapa chini.
-            <span class="en">Position unavailable, often indoors — retry outside, or choose below.</span>`,
-        3: `Muda wa kutafuta GPS umeisha. Jaribu tena, au chagua mahali pako hapa chini.
-            <span class="en">The location request timed out — retry, or choose below.</span>`,
-      }[err.code] || `Kuna hitilafu ya GPS. Chagua mahali pako hapa chini.
-            <span class="en">Something went wrong with GPS — choose your location below.</span>`;
+      const why = isEn()
+        ? {
+            1: `You denied GPS permission. You can allow it in your browser settings and
+                retry, or choose your location below.`,
+            2: `We couldn't get your location — this often happens indoors. Retry
+                outside, or choose your location below.`,
+            3: `The GPS request timed out. Retry, or choose your location below.`,
+          }[err.code] || `Something went wrong with GPS. Choose your location below.`
+        : {
+            1: `Umekataa ruhusa ya GPS. Unaweza kuiruhusu kwenye mipangilio ya kivinjari na kubonyeza
+                tena, au chagua mahali pako hapa chini.`,
+            2: `Hatukuweza kupata mahali ulipo — mara nyingi hii hutokea ukiwa ndani ya jengo.
+                Jaribu tena ukiwa nje, au chagua mahali pako hapa chini.`,
+            3: `Muda wa kutafuta GPS umeisha. Jaribu tena, au chagua mahali pako hapa chini.`,
+          }[err.code] || `Kuna hitilafu ya GPS. Chagua mahali pako hapa chini.`;
       revealManual(why);
     }
   );
@@ -472,14 +521,19 @@ async function initManual() {
   const idx = await getIndex();
   const [mR, mD, mW, mV, mC] = ['m-region', 'm-district', 'm-ward', 'm-village', 'm-copy'].map($);
   const reset = (sel, label) => { sel.innerHTML = ''; sel.add(new Option(label, '')); sel.disabled = true; };
+  const ph = () => isEn()
+    ? { region: '— choose a region —', district: '— choose a district —', ward: '— choose a ward —',
+        village: '— choose a village —', novill: '— no village list —' }
+    : { region: '— chagua mkoa —', district: '— chagua wilaya —', ward: '— chagua kata —',
+        village: '— chagua kijiji —', novill: '— hatuna orodha ya vijiji —' };
 
   mR.innerHTML = '';
-  mR.add(new Option('— chagua mkoa —', ''));
+  mR.add(new Option(ph().region, ''));
   idx.forEach((e) => mR.add(new Option(e.region, e.slug)));
 
   let wards = [], picked = null;
   mR.onchange = async () => {
-    reset(mD, '— chagua wilaya —'); reset(mW, '— chagua kata —'); reset(mV, '— chagua kijiji —');
+    reset(mD, ph().district); reset(mW, ph().ward); reset(mV, ph().village);
     mC.disabled = true; picked = null; $('m-out').hidden = true;
     if (!mR.value) return;
     wards = (await getWards(mR.value)).wards;
@@ -488,7 +542,7 @@ async function initManual() {
     mD.disabled = false;
   };
   mD.onchange = () => {
-    reset(mW, '— chagua kata —'); reset(mV, '— chagua kijiji —');
+    reset(mW, ph().ward); reset(mV, ph().village);
     mC.disabled = true; picked = null; $('m-out').hidden = true;
     if (!mD.value) return;
     wards.filter((w) => w.d === mD.value).map((w) => w.w).sort()
@@ -496,7 +550,7 @@ async function initManual() {
     mW.disabled = false;
   };
   mW.onchange = () => {
-    reset(mV, '— chagua kijiji —');
+    reset(mV, ph().village);
     mC.disabled = true;
     picked = null;
     $('m-out').hidden = true;
@@ -507,12 +561,14 @@ async function initManual() {
     // village is picked -- often it is the only thing the visitor came for.
     $('m-council').textContent = w.cn;
     $('m-postcode').innerHTML = w.pc
-      ? `${w.pc} <small>si rasmi — thibitisha NaPA (Serikali)</small>`
-      : `<span class="none">hatuna kwa kata hii <small>tafuta NaPA</small></span>`;
+      ? isEn() ? `${w.pc} <small>unofficial — confirm with NaPA (Government)</small>`
+               : `${w.pc} <small>si rasmi — thibitisha NaPA (Serikali)</small>`
+      : isEn() ? `<span class="none">none for this ward <small>look up NaPA</small></span>`
+               : `<span class="none">hatuna kwa kata hii <small>tafuta NaPA</small></span>`;
     $('m-out').hidden = false;
     if (!w.v.length) {
       mV.innerHTML = '';
-      mV.add(new Option('— hatuna orodha ya vijiji —', ''));
+      mV.add(new Option(ph().novill, ''));
       mV.disabled = true;
       mC.disabled = false;   // region/district/ward/postcode are still worth copying
       return;
@@ -521,13 +577,20 @@ async function initManual() {
     mV.disabled = false;
   };
   mV.onchange = () => { mC.disabled = !mV.value; };
-  mC.onclick = () => copy(mC, [
-    `Mkoa: ${mR.selectedOptions[0].text}`, `Wilaya: ${mD.value}`,
-    ...(picked ? [`Halmashauri: ${picked.cn}`] : []),
-    `Kata/Shehia: ${mW.value}`,
-    `Kijiji/Mtaa: ${mV.value || '(hatuna orodha)'}`,
-    ...(picked && picked.pc ? [`Msimbo wa posta: ${picked.pc}`] : []),
-  ].join('\n'));
+  mC.onclick = () => {
+    const L = isEn()
+      ? { region: 'Region', district: 'District', council: 'Council', ward: 'Ward/Shehia',
+          village: 'Village/Mtaa', none: '(no list)', pc: 'Postcode' }
+      : { region: 'Mkoa', district: 'Wilaya', council: 'Halmashauri', ward: 'Kata/Shehia',
+          village: 'Kijiji/Mtaa', none: '(hatuna orodha)', pc: 'Msimbo wa posta' };
+    copy(mC, [
+      `${L.region}: ${mR.selectedOptions[0].text}`, `${L.district}: ${mD.value}`,
+      ...(picked ? [`${L.council}: ${picked.cn}`] : []),
+      `${L.ward}: ${mW.value}`,
+      `${L.village}: ${mV.value || L.none}`,
+      ...(picked && picked.pc ? [`${L.pc}: ${picked.pc}`] : []),
+    ].join('\n'));
+  };
 }
 
 /* ---------- visitor counter ----------
@@ -583,9 +646,17 @@ function showQuality(idx) {
   box.innerHTML = '';
   for (const e of rows) {
     const bits = [];
-    if (e.novill) bits.push(`<span class="q-novill">${e.novill}/${e.wards} kata: hakuna orodha ya vijiji</span>`);
+    if (e.novill) {
+      bits.push(isEn()
+        ? `<span class="q-novill">${e.novill}/${e.wards} wards: no village list</span>`
+        : `<span class="q-novill">${e.novill}/${e.wards} kata: hakuna orodha ya vijiji</span>`);
+    }
     const noPc = e.wards - e.pc;
-    if (noPc) bits.push(`<span class="q-nopc">${noPc}/${e.wards} kata: hakuna msimbo wa posta</span>`);
+    if (noPc) {
+      bits.push(isEn()
+        ? `<span class="q-nopc">${noPc}/${e.wards} wards: no postcode</span>`
+        : `<span class="q-nopc">${noPc}/${e.wards} kata: hakuna msimbo wa posta</span>`);
+    }
     const row = document.createElement('div');
     row.className = 'qrow';
     row.innerHTML = `<span class="qname">${e.region}</span><span class="qbits">${bits.join(' · ')}</span>`;
@@ -599,9 +670,9 @@ async function copy(btn, text) {
   const label = btn.innerHTML;
   try {
     await navigator.clipboard.writeText(text);
-    btn.textContent = 'Imenakiliwa ✓';
+    btn.textContent = isEn() ? 'Copied ✓' : 'Imenakiliwa ✓';
   } catch {
-    btn.textContent = 'Imeshindikana';
+    btn.textContent = isEn() ? 'Failed' : 'Imeshindikana';
   }
   setTimeout(() => { btn.innerHTML = label; }, 1600);
 }
@@ -625,12 +696,38 @@ $('theme-toggle').onclick = () => {
   applyTheme(next);
 };
 
+/* ---------- language ---------- */
+
+// Default is Swahili. A visitor's explicit choice is remembered and applied
+// before paint by the inline script in index.html (which also sets the
+// data-lang attribute LANG was seeded from). Static bilingual pairs in the
+// HTML (.t-sw / .en) are shown or hidden purely by CSS keyed off that
+// attribute; this only keeps the toggle's aria state in sync and re-renders
+// whatever dynamic (JS-generated) text is currently on screen.
+function applyLang(lang) {
+  LANG = lang;
+  document.documentElement.setAttribute('data-lang', lang);
+  document.documentElement.lang = lang;
+  $('lang-toggle').setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+  if (lastRender) render(lastRender.res, lastRender.lat, lastRender.lng, lastRender.acc);
+  if (manualReady) initManual();
+  if (lastIndex) showQuality(lastIndex);
+}
+$('lang-toggle').setAttribute('aria-pressed', LANG === 'en' ? 'true' : 'false');
+
+$('lang-toggle').onclick = () => {
+  const next = LANG === 'en' ? 'sw' : 'en';
+  try { localStorage.setItem('lang', next); } catch (e) {}
+  applyLang(next);
+};
+
 $('locate').onclick = locate;
 $('again').onclick = locate;
 $('copy').onclick = (e) => copy(e.currentTarget, statement());
-$('copy-addr').onclick = (e) => copy(e.currentTarget, addressBlock(current, $('f-village').value));
+$('copy-addr').onclick = (e) => copy(e.currentTarget, addressBlock(current, $('f-village').value, LANG));
 
 getIndex().then((idx) => {
+  lastIndex = idx;
   const sum = (k) => idx.reduce((n, e) => n + e[k], 0);
   const pct = (a, b) => `${a.toLocaleString()} / ${b.toLocaleString()} (${Math.round((100 * a) / b)}%)`;
   $('cov').textContent = pct(sum('mapped'), sum('wards'));

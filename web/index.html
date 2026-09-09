@@ -24,12 +24,17 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <script>
-/* Default is light mode. Only override to dark before first paint if the
-   visitor explicitly chose it before — never follow system preference. */
+/* Defaults are light theme + Swahili. Only override before first paint if
+   the visitor explicitly chose otherwise before — never follow system
+   preference for either. */
 (function () {
   try {
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    if (localStorage.getItem('lang') === 'en') {
+      document.documentElement.setAttribute('data-lang', 'en');
+      document.documentElement.lang = 'en';
     }
   } catch (e) {}
 })();
@@ -56,51 +61,69 @@
 <body>
 <main>
   <header class="navbar">
-    <h1>Uko wapi hasa? <small>Mkoa, wilaya, kata na kijiji lako</small></h1>
-    <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false"
-      aria-label="Badilisha mwonekano: mweupe au wa giza — Switch between light and dark mode">
-      <svg class="i-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-      </svg>
-      <svg class="i-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-      </svg>
-    </button>
+    <h1>Uko wapi hasa? <small>
+      <span class="t-sw">Mkoa, wilaya, kata na kijiji lako</span><span class="en">Region, district, ward and village</span>
+    </small></h1>
+    <div class="nav-controls">
+      <button id="lang-toggle" class="lang-toggle" type="button" aria-pressed="false"
+        aria-label="Badilisha lugha: Kiswahili au Kiingereza — Switch language: Swahili or English">
+        <span class="t-sw" aria-hidden="true">EN</span><span class="en" aria-hidden="true">SW</span>
+      </button>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false"
+        aria-label="Badilisha mwonekano: mweupe au wa giza — Switch between light and dark mode">
+        <svg class="i-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="i-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
   </header>
-  <p class="sub">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.
-    <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
+  <p class="sub">
+    <span class="t-sw">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.</span>
+    <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span>
+  </p>
 
   <p class="visits" id="visits" hidden>
     <span class="dot" aria-hidden="true"></span>
-    Wageni waliotembelea: <span id="visits-n">—</span>
-    <small>visitors</small></p>
+    <span class="t-sw">Wageni waliotembelea:</span><span class="en">Visitors:</span>
+    <span id="visits-n">—</span>
+    <small><span class="t-sw">wageni</span><span class="en">visitors</span></small></p>
 
   <button id="locate" class="primary">
     <span class="pin" aria-hidden="true"></span>
-    <span>Nipate mahali nilipo <small>Locate me</small></span>
+    <span><span class="t-sw">Nipate mahali nilipo</span><span class="en">Locate me</span></span>
   </button>
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
 
-  <p class="desk-note hint" id="desk-note">Kwenye kompyuta GPS hukisiwa kwa mtandao, hivyo
-    inaweza kukosea kwa kilomita kadhaa. Kwa usahihi zaidi tumia simu.
+  <p class="desk-note hint" id="desk-note">
+    <span class="t-sw">Kwenye kompyuta GPS hukisiwa kwa mtandao, hivyo
+      inaweza kukosea kwa kilomita kadhaa. Kwa usahihi zaidi tumia simu.</span>
     <span class="en">On a computer, location is estimated from the network and can be off by
       kilometres — use a phone for an accurate result.</span></p>
 
-  <!-- Shown when the fix lands outside Tanzania. English first: someone abroad
-       is less likely to read Swahili. -->
   <section id="outside" class="outside" hidden>
-    <h2>You are outside Tanzania <small>Uko nje ya Tanzania</small></h2>
-    <p>This tool only covers Tanzania — its region, district, ward and village data
-      stops at the border, so it cannot tell you where you are from here.</p>
-    <p>If you are filling in a form for somewhere in Tanzania — for
-      family, or on someone's behalf — open <strong>“Tafuta mahali pengine / Look up
-      another place”</strong> below and choose it by name.</p>
-    <p class="sw">Zana hii inahusu Tanzania pekee. Kama unajaza fomu ya mahali fulani
-      Tanzania, tumia “Tafuta mahali pengine” hapa chini.</p>
+    <div class="t-sw">
+      <h2>Uko nje ya Tanzania</h2>
+      <p>Zana hii inahusu Tanzania pekee — data yake ya mkoa, wilaya, kata na kijiji inaishia
+        mpakani, hivyo haiwezi kukuambia ulipo kutoka huku.</p>
+      <p>Kama unajaza fomu ya mahali fulani Tanzania — kwa ajili ya familia, au kwa niaba ya
+        mtu mwingine — fungua <strong>“Tafuta mahali pengine”</strong> hapa chini na uchague
+        kwa jina.</p>
+    </div>
+    <div class="en">
+      <h2>You are outside Tanzania</h2>
+      <p>This tool only covers Tanzania — its region, district, ward and village data
+        stops at the border, so it cannot tell you where you are from here.</p>
+      <p>If you are filling in a form for somewhere in Tanzania — for
+        family, or on someone's behalf — open <strong>“Look up
+        another place”</strong> below and choose it by name.</p>
+    </div>
   </section>
 
   <section id="result" hidden>
@@ -109,13 +132,16 @@
     <div id="warn" class="warn" hidden></div>
 
     <dl class="fields">
-      <div class="row"><dt>Mkoa <small>Region</small></dt><dd id="f-region">—</dd></div>
-      <div class="row"><dt>Wilaya <small>District</small></dt><dd id="f-district">—</dd></div>
-      <div class="row"><dt>Kata / Shehia <small>Ward</small></dt><dd id="f-ward">—</dd></div>
-      <div class="row"><dt>Msimbo wa posta <small>Postcode</small></dt>
+      <div class="row"><dt><span class="t-sw">Mkoa</span><span class="en">Region</span></dt>
+        <dd id="f-region">—</dd></div>
+      <div class="row"><dt><span class="t-sw">Wilaya</span><span class="en">District</span></dt>
+        <dd id="f-district">—</dd></div>
+      <div class="row"><dt><span class="t-sw">Kata / Shehia</span><span class="en">Ward</span></dt>
+        <dd id="f-ward">—</dd></div>
+      <div class="row"><dt><span class="t-sw">Msimbo wa posta</span><span class="en">Postcode</span></dt>
         <dd id="f-postcode">—</dd></div>
       <div class="row village">
-        <dt><label for="f-village">Kijiji / Mtaa <small>Village / Street</small></label></dt>
+        <dt><label for="f-village"><span class="t-sw">Kijiji / Mtaa</span><span class="en">Village / Street</span></label></dt>
         <dd><select id="f-village"></select>
             <p class="hint" id="v-note"></p></dd>
       </div>
@@ -124,16 +150,16 @@
     <p class="hint agehint" id="src-note"></p>
 
     <div class="actions">
-      <button id="copy" class="ghost">Nakili sehemu <small>Copy fields</small></button>
-      <button id="copy-addr" class="ghost">Nakili anwani <small>Copy address</small></button>
-      <button id="again" class="ghost">Pima tena <small>Retry</small></button>
+      <button id="copy" class="ghost"><span class="t-sw">Nakili sehemu</span><span class="en">Copy fields</span></button>
+      <button id="copy-addr" class="ghost"><span class="t-sw">Nakili anwani</span><span class="en">Copy address</span></button>
+      <button id="again" class="ghost"><span class="t-sw">Pima tena</span><span class="en">Retry</span></button>
     </div>
 
-    <p class="report"><a id="report" href="#">Kata si sahihi? Niambie
-      <small>Wrong ward? Report it</small></a></p>
+    <p class="report"><a id="report" href="#">
+      <span class="t-sw">Kata si sahihi? Niambie</span><span class="en">Wrong ward? Report it</span></a></p>
 
     <details id="alts" hidden>
-      <summary>Kata jirani <small>Nearby wards</small></summary>
+      <summary><span class="t-sw">Kata jirani</span><span class="en">Nearby wards</span></summary>
       <div id="alts-body"></div>
     </details>
 
@@ -144,111 +170,121 @@
        and the GPS-failure fallback, which opens it and explains why. -->
   <section id="manual-wrap">
     <details id="lookup">
-      <summary>Tafuta mahali pengine <small>Look up another place</small></summary>
+      <summary><span class="t-sw">Tafuta mahali pengine</span><span class="en">Look up another place</span></summary>
       <div class="manual-body">
         <p class="hint" id="manual-why" hidden></p>
-        <p class="hint" id="lookup-hint">Kwa kujaza fomu ya mtu mwingine, au kujua msimbo
-          wa posta wa mahali fulani. Lazima ujue mkoa na wilaya.
+        <p class="hint" id="lookup-hint">
+          <span class="t-sw">Kwa kujaza fomu ya mtu mwingine, au kujua msimbo
+            wa posta wa mahali fulani. Lazima ujue mkoa na wilaya.</span>
           <span class="en">For filling a form on someone else's behalf, or finding a
             place's postcode. You need to know its region and district.</span></p>
 
         <div class="fields form">
-          <div class="row"><dt><label for="m-region">Mkoa <small>Region</small></label></dt>
+          <div class="row"><dt><label for="m-region"><span class="t-sw">Mkoa</span><span class="en">Region</span></label></dt>
             <dd><select id="m-region"></select></dd></div>
-          <div class="row"><dt><label for="m-district">Wilaya <small>District</small></label></dt>
+          <div class="row"><dt><label for="m-district"><span class="t-sw">Wilaya</span><span class="en">District</span></label></dt>
             <dd><select id="m-district" disabled></select></dd></div>
-          <div class="row"><dt><label for="m-ward">Kata / Shehia <small>Ward</small></label></dt>
+          <div class="row"><dt><label for="m-ward"><span class="t-sw">Kata / Shehia</span><span class="en">Ward</span></label></dt>
             <dd><select id="m-ward" disabled></select></dd></div>
-          <div class="row"><dt><label for="m-village">Kijiji / Mtaa <small>Village</small></label></dt>
+          <div class="row"><dt><label for="m-village"><span class="t-sw">Kijiji / Mtaa</span><span class="en">Village</span></label></dt>
             <dd><select id="m-village" disabled></select></dd></div>
         </div>
 
         <dl class="fields" id="m-out" hidden>
-          <div class="row"><dt>Halmashauri <small>Council</small></dt>
+          <div class="row"><dt><span class="t-sw">Halmashauri</span><span class="en">Council</span></dt>
             <dd id="m-council">—</dd></div>
-          <div class="row"><dt>Msimbo wa posta <small>Postcode</small></dt>
+          <div class="row"><dt><span class="t-sw">Msimbo wa posta</span><span class="en">Postcode</span></dt>
             <dd id="m-postcode">—</dd></div>
         </dl>
 
-        <button id="m-copy" class="ghost" disabled>Nakili taarifa <small>Copy</small></button>
+        <button id="m-copy" class="ghost" disabled><span class="t-sw">Nakili taarifa</span><span class="en">Copy</span></button>
       </div>
     </details>
   </section>
 
   <footer>
     <details class="srcinfo">
-    <summary>Chanzo cha taarifa na maelezo muhimu
-      <small>Data sources &amp; disclaimer</small></summary>
+    <summary><span class="t-sw">Chanzo cha taarifa na maelezo muhimu</span><span class="en">Data sources &amp; disclaimer</span></summary>
 
     <dl class="src">
-      <dt>Mikoa, halmashauri, kata — na mipaka yake</dt>
-      <dd><strong>Sensa ya Watu na Makazi ya mwaka 2022, Ofisi ya Taifa ya Takwimu
-        (NBS)</strong> —
-        <a href="https://www.nbs.go.tz/statistics/topic/gis" target="_blank" rel="noopener">shapefile rasmi ya kata</a>.
-        Mikoa 31, halmashauri 195,
-        kata/shehia <strong>4,344</strong>, kila moja na mpaka wake na msimbo rasmi.
-        Kata <strong id="cov">—</strong> zina ramani.
-        <br><strong class="age">Hii ndiyo seti mpya kabisa iliyochapishwa —
-        ya mwaka 2022, takribani miaka <span class="bnd-age">—</span> iliyopita.</strong>
+      <dt><span class="t-sw">Mikoa, halmashauri, kata — na mipaka yake</span><span class="en">Regions, councils, wards — and their boundaries</span></dt>
+      <dd>
+        <span class="t-sw"><strong>Sensa ya Watu na Makazi ya mwaka 2022, Ofisi ya Taifa ya Takwimu
+          (NBS)</strong> —
+          <a href="https://www.nbs.go.tz/statistics/topic/gis" target="_blank" rel="noopener">shapefile rasmi ya kata</a>.
+          Mikoa 31, halmashauri 195,
+          kata/shehia <strong>4,344</strong>, kila moja na mpaka wake na msimbo rasmi.
+          Kata <strong id="cov">—</strong> zina ramani.
+          <br><strong class="age">Hii ndiyo seti mpya kabisa iliyochapishwa —
+          ya mwaka 2022, takribani miaka <span class="bnd-age">—</span> iliyopita.</strong></span>
         <span class="en">Regions, councils, wards and every boundary come from the
           2022 Population and Housing Census ward shapefile published by the National
-          Bureau of Statistics. This is what tells you your council correctly.</span></dd>
+          Bureau of Statistics — the newest such set published, about
+          <span class="bnd-age">—</span> years ago. This is what tells you your council
+          correctly.</span></dd>
 
-      <dt>Orodha ya vijiji / mitaa</dt>
-      <dd>NBS haichapishi orodha ya vijiji katika kiwango hiki, hivyo tunaunganisha
-        orodha ya <code>data.json</code> (ya kabla ya 2016) kwenye kata za 2022 kwa
-        kulinganisha majina. Kata <strong id="cov-vw">—</strong> zimepata orodha;
-        zilizobaki hazina, na hapo utajaza mwenyewe.
+      <dt><span class="t-sw">Orodha ya vijiji / mitaa</span><span class="en">Village / mtaa lists</span></dt>
+      <dd>
+        <span class="t-sw">NBS haichapishi orodha ya vijiji katika kiwango hiki, hivyo tunaunganisha
+          orodha ya <code>data.json</code> (ya kabla ya 2016) kwenye kata za 2022 kwa
+          kulinganisha majina. Kata <strong id="cov-vw">—</strong> zimepata orodha;
+          zilizobaki hazina, na hapo utajaza mwenyewe.</span>
         <span class="en">Village/mtaa lists are joined by name from an older list,
           because NBS does not publish them at this level. Where the join fails the
           ward simply has no village list.</span></dd>
 
-      <dt>Vituo vya vijiji / mitaa</dt>
-      <dd>Vidokezo vya OpenStreetMap (ODbL 1.0). Vijiji/mitaa <strong id="cov-v">—</strong>
-        vina kituo, hivyo tunaweza kukisia kilicho karibu nawe.
+      <dt><span class="t-sw">Vituo vya vijiji / mitaa</span><span class="en">Village / mtaa points</span></dt>
+      <dd>
+        <span class="t-sw">Vidokezo vya OpenStreetMap (ODbL 1.0). Vijiji/mitaa <strong id="cov-v">—</strong>
+          vina kituo, hivyo tunaweza kukisia kilicho karibu nawe.</span>
         <span class="en">Village points, used only to guess the closest one.</span></dd>
 
-      <dt>Msimbo wa posta</dt>
-      <dd><strong>Chanzo rasmi ni Serikali:</strong>
-        <a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>
-        (Mfumo wa Anwani za Makazi na Postikodi, Wizara ya Mawasiliano). Kwa jambo lolote
-        rasmi au la kisheria, <strong>tumia NaPA, si sisi.</strong>
-        <br>Sisi tunaonyesha nakala isiyo rasmi kutoka
-        <a href="https://www.tanzaniapostcode.com/" target="_blank" rel="noopener">tanzaniapostcode.com</a>
-        — si mali yetu, tunashukuru kwa kazi yao — ili upate jibu la haraka bila kuondoka
-        hapa. Kata <strong id="cov-pc">—</strong> zina msimbo; tulilinganisha na vidokezo
-        huru vya OpenStreetMap na mikoa 9 kati ya 10 ilikubaliana.
-        <br>Msimbo wa <code>TZ…</code> unaoonyeshwa ni wa takwimu za kiutawala, si wa posta.
+      <dt><span class="t-sw">Msimbo wa posta</span><span class="en">Postcode</span></dt>
+      <dd>
+        <span class="t-sw"><strong>Chanzo rasmi ni Serikali:</strong>
+          <a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>
+          (Mfumo wa Anwani za Makazi na Postikodi, Wizara ya Mawasiliano). Kwa jambo lolote
+          rasmi au la kisheria, <strong>tumia NaPA, si sisi.</strong>
+          <br>Sisi tunaonyesha nakala isiyo rasmi kutoka
+          <a href="https://www.tanzaniapostcode.com/" target="_blank" rel="noopener">tanzaniapostcode.com</a>
+          — si mali yetu, tunashukuru kwa kazi yao — ili upate jibu la haraka bila kuondoka
+          hapa. Kata <strong id="cov-pc">—</strong> zina msimbo; tulilinganisha na vidokezo
+          huru vya OpenStreetMap na mikoa 9 kati ya 10 ilikubaliana.
+          <br>Msimbo wa <code>TZ…</code> unaoonyeshwa ni wa takwimu za kiutawala, si wa posta.</span>
         <span class="en">The official source is the Government's NaPA system — use it for
           anything official. What we show is an unofficial copy from
           tanzaniapostcode.com, for a quick answer without leaving the page.</span></dd>
 
-      <dt>Ramani</dt>
-      <dd>Tiles za OpenStreetMap.</dd>
+      <dt><span class="t-sw">Ramani</span><span class="en">Map</span></dt>
+      <dd><span class="t-sw">Tiles za OpenStreetMap.</span><span class="en">OpenStreetMap tiles.</span></dd>
     </dl>
 
     <div class="quality">
-      <p><strong>Kata zilizogawanywa baada ya 2022.</strong>
-        Mkoa, halmashauri na kata sasa hutoka kwenye sensa ya 2022, hivyo halmashauri
-        mpya kama <strong>Ubungo</strong> na Kigamboni zinaonyeshwa
-        sawa. Lakini kata iliyoundwa au kugawanywa <em>baada ya</em> 2022 bado
-        itaonyeshwa kwa jina la kata yake ya zamani, na ukurasa hauwezi kuligundua.
-        <span class="en">Region, council and ward now come from the 2022 census, so
+      <div class="t-sw">
+        <p><strong>Kata zilizogawanywa baada ya 2022.</strong>
+          Mkoa, halmashauri na kata sasa hutoka kwenye sensa ya 2022, hivyo halmashauri
+          mpya kama <strong>Ubungo</strong> na Kigamboni zinaonyeshwa
+          sawa. Lakini kata iliyoundwa au kugawanywa <em>baada ya</em> 2022 bado
+          itaonyeshwa kwa jina la kata yake ya zamani, na ukurasa hauwezi kuligundua.</p>
+        <p class="qhead">Mikoa yenye upungufu tunaoujua:</p>
+      </div>
+      <div class="en">
+        <p>Region, council and ward now come from the 2022 census, so
           councils created in 2015–16 are finally correct. A ward split after 2022
-          will still show its old parent, and the page cannot detect that.</span></p>
-
-      <p class="qhead">Mikoa yenye upungufu tunaoujua:
-        <span class="en">Regions with known gaps in our data:</span></p>
+          will still show its old parent, and the page cannot detect that.</p>
+        <p class="qhead">Regions with known gaps in our data:</p>
+      </div>
       <div id="qtable" class="qtable">—</div>
-      <p class="qkey"><span class="q-novill">hakuna orodha ya vijiji</span> ·
-        <span class="q-nopc">hakuna msimbo wa posta</span>
+      <p class="qkey"><span class="q-novill">
+          <span class="t-sw">hakuna orodha ya vijiji</span><span class="en">no village list</span></span> ·
+        <span class="q-nopc"><span class="t-sw">hakuna msimbo wa posta</span><span class="en">no postcode</span></span>
         <span class="en">— boundaries are complete everywhere; these are the two
           fields joined from older sources.</span></p>
     </div>
 
     <div class="disclaimer">
-      <p><strong>Tafadhali soma hili.</strong></p>
-      <ul>
+      <p><strong><span class="t-sw">Tafadhali soma hili.</span><span class="en">Please read this.</span></strong></p>
+      <ul class="t-sw">
         <li>Mkoa, wilaya na kata hupatikana kwa mipaka rasmi ya ramani.
           <strong>Kijiji/mtaa ni makadirio</strong> — hakuna mipaka ya vijiji iliyochapishwa
           popote, hivyo lazima uhakiki mwenyewe.</li>
@@ -286,24 +322,33 @@
         no identity check — it is a form-filling aid, not proof of residence. We store
         nothing and your coordinates are never transmitted to any server. Map tiles are
         the exception: fetching them tells OpenStreetMap roughly where you are, as on
-        any site with a map.</p>
+        any site with a map. The visitor counter (abacus.jasoncameron.dev) only counts
+        page opens — it never receives your location or your name. Like any site,
+        the server that hosts this page (GitHub Pages) sees your IP address and
+        browser type; the region file you download reveals which region you're in,
+        but not your exact location.</p>
     </div>
     </details>
 
     <p class="contact">
-      Imetengenezwa na Tevin Mdendu
+      <span class="t-sw">Imetengenezwa na Tevin Mdendu</span>
       <span class="en">Built by Tevin Mdendu</span>
       <span class="links">
         <a href="https://www.linkedin.com/in/tevin-mdendu-314151313" target="_blank" rel="noopener">LinkedIn</a>
         <a href="mailto:mdendutevin@gmail.com">mdendutevin@gmail.com</a>
       </span>
-      <span class="feedback">Umeona kata isiyo sahihi? Niandikie.
+      <span class="feedback">
+        <span class="t-sw">Umeona kata isiyo sahihi? Niandikie.</span>
         <span class="en">Spotted a wrong ward? Get in touch.</span></span>
     </p>
 
-    <p class="credit">Si uthibitisho rasmi wa makazi — ni msaada wa kujaza fomu.
-      Mipaka: NBS / UN OCHA (CC BY-IGO) na OpenStreetMap (ODbL 1.0).
-      Postikodi rasmi: <a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>.</p>
+    <p class="credit">
+      <span class="t-sw">Si uthibitisho rasmi wa makazi — ni msaada wa kujaza fomu.
+        Mipaka: NBS / UN OCHA (CC BY-IGO) na OpenStreetMap (ODbL 1.0).
+        Postikodi rasmi: <a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>.</span>
+      <span class="en">Not official proof of residence — a form-filling aid.
+        Boundaries: NBS / UN OCHA (CC BY-IGO) and OpenStreetMap (ODbL 1.0).
+        Official postcode: <a href="https://napa.mawasiliano.go.tz/find-postcode" target="_blank" rel="noopener">NaPA</a>.</span></p>
   </footer>
 </main>
 

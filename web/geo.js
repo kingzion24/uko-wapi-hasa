@@ -56,7 +56,9 @@ function distMeters(x1, y1, x2, y2) {
   return Math.hypot((x2 - x1) * kx, (y2 - y1) * ky);
 }
 
-function fmtDist(m) {
+// lang defaults to 'sw' so existing callers (and build/test_geo.js) are unaffected.
+function fmtDist(m, lang = 'sw') {
+  if (lang === 'en') return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
   return m < 1000 ? `mita ${Math.round(m / 10) * 10}` : `km ${(m / 1000).toFixed(1)}`;
 }
 
@@ -65,8 +67,8 @@ function fmtDist(m) {
  * address from house number + road + mtaa + ward + postcode + district + region.
  * We know everything from the mtaa outwards, so the two parts only the resident
  * knows are left as a visible prompt rather than silently dropped. */
-function addressBlock({ region, district, ward, pc }, village) {
-  const lines = ['[Namba ya nyumba na barabara]'];
+function addressBlock({ region, district, ward, pc }, village, lang = 'sw') {
+  const lines = [lang === 'en' ? '[House number and street]' : '[Namba ya nyumba na barabara]'];
   if (village) lines.push(village);
   if (ward) lines.push(ward);
   lines.push(pc ? `${pc} ${district}` : district);
