@@ -606,6 +606,25 @@ async function copy(btn, text) {
   setTimeout(() => { btn.innerHTML = label; }, 1600);
 }
 
+/* ---------- theme ---------- */
+
+// Default is light. A visitor's explicit choice is remembered and applied
+// before paint by the inline script in index.html; this just keeps the
+// toggle, aria state and browser-chrome colors in sync with it.
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('theme-toggle').setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+  $('meta-theme-color').setAttribute('content', theme === 'dark' ? '#101317' : '#1f7a4d');
+  $('meta-color-scheme').setAttribute('content', theme);
+}
+applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+
+$('theme-toggle').onclick = () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  applyTheme(next);
+};
+
 $('locate').onclick = locate;
 $('again').onclick = locate;
 $('copy').onclick = (e) => copy(e.currentTarget, statement());

@@ -31,15 +31,15 @@
   --ease-spring: cubic-bezier(.32, .72, 0, 1);
   --ease-out: cubic-bezier(.25, 1, .5, 1);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #000; --card: #1c1c1e; --hover: #232326; --ink: #f5f5f7; --muted: #98989d;
-    --faint: #48484a; --line: rgba(255, 255, 255, .14);
-    --brand: #30d158; --brand-shadow: rgba(48, 209, 88, .28);
-    --warn-bg: #2a2313; --warn-line: #6b5320; --warn-ink: #f0cf8f;
-    --error: #ff8b7a;
-    --sh-card: none; --sh-panel: none;
-  }
+/* Theme is chosen by the visitor (default: light), not by system preference —
+   see the toggle in the header and the pre-paint script in index.html. */
+:root[data-theme="dark"] {
+  --bg: #000; --card: #1c1c1e; --hover: #232326; --ink: #f5f5f7; --muted: #98989d;
+  --faint: #48484a; --line: rgba(255, 255, 255, .14);
+  --brand: #30d158; --brand-shadow: rgba(48, 209, 88, .28);
+  --warn-bg: #2a2313; --warn-line: #6b5320; --warn-ink: #f0cf8f;
+  --error: #ff8b7a;
+  --sh-card: none; --sh-panel: none;
 }
 
 * { box-sizing: border-box; }
@@ -52,6 +52,18 @@ body {
   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
 }
 main { max-width: 36rem; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
+
+.topbar { display: flex; justify-content: flex-end; margin-bottom: .5rem; }
+.theme-toggle {
+  width: 2.35rem; height: 2.35rem; padding: 0; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card); border: 1px solid var(--line); color: var(--ink);
+  box-shadow: var(--sh-card);
+}
+.theme-toggle svg { width: 1.1rem; height: 1.1rem; }
+.theme-toggle .i-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .i-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .i-moon { display: block; }
 
 h1 {
   font-size: clamp(1.65rem, 5.5vw, 2.15rem); font-weight: 700;
@@ -194,6 +206,7 @@ summary small { display: inline; margin-left: .35rem; }
   select { padding: .75rem .7rem; font-size: 16px; min-height: 44px; }
   summary { padding: .25rem 0; }
   #alts-body button { min-height: 44px; }
+  .theme-toggle { width: 44px; height: 44px; }
 }
 
 /* Narrow phones: labels above values instead of a cramped two-column grid. */
@@ -290,9 +303,7 @@ footer code { font-size: .95em; background: var(--card);
 .qbits { font-size: .95em; }
 .q-novill { color: #b45309; }
 .q-nopc { color: var(--muted); }
-@media (prefers-color-scheme: dark) {
-  .q-novill { color: #f0b45e; }
-}
+:root[data-theme="dark"] .q-novill { color: #f0b45e; }
 .qkey { margin-top: .65rem !important; font-size: .95em; }
 @media (max-width: 24rem) {
   .qrow { grid-template-columns: 1fr; gap: .1rem; }
