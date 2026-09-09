@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Uko Wapi? — Tanzania location finder</title>
-<meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo. One tap to find your region, district, ward and village in Tanzania.">
+<title>Uko Wapi? — Find Your Region, District, Ward &amp; Village in Tanzania</title>
+<meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo. One tap to find your exact region, district, ward and village in Tanzania — free, no login, nothing sent to a server.">
 <link rel="canonical" href="https://ukowapi.site/">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ukowapi.site/">
 <meta property="og:site_name" content="Uko Wapi Hasa?">
 <meta property="og:locale" content="sw_TZ">
-<meta property="og:title" content="Uko wapi hasa?">
+<meta property="og:title" content="Uko wapi hasa? — Mkoa, wilaya, kata na kijiji lako">
 <meta property="og:description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Uko wapi hasa?">
+<meta name="twitter:title" content="Uko wapi hasa? — Region, district, ward &amp; village finder">
 <meta name="twitter:description" content="Know your exact region, district, ward and village in Tanzania — one tap, no login.">
 <meta name="theme-color" content="#1f7a4d" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#101317" media="(prefers-color-scheme: dark)">
@@ -22,8 +23,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Uko Wapi">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Uko Wapi Hasa?",
+  "alternateName": "Uko Wapi?",
+  "url": "https://ukowapi.site/",
+  "description": "One tap to find your exact region, district, ward and village in Tanzania, using the 2022 National Bureau of Statistics census boundaries. Free, no login, nothing sent to a server.",
+  "applicationCategory": "UtilityApplication",
+  "operatingSystem": "Any",
+  "inLanguage": ["sw", "en"],
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Tevin Mdendu" },
+  "areaServed": { "@type": "Country", "name": "Tanzania" }
+}
+</script>
 </head>
 <body>
 <main>
@@ -261,8 +278,7 @@
   </footer>
 </main>
 
-<script src="vendor/leaflet/leaflet.js"></script>
-<script src="geo.js"></script>
-<script src="app.js"></script>
+<script src="geo.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>

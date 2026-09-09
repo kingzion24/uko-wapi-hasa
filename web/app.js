@@ -89,7 +89,27 @@ async function nearbyWards(lng, lat, slug, chosen, radius) {
 
 /* ---------- map ---------- */
 
-function showMap(lat, lng, acc, geom, guess) {
+// Leaflet (~160 KB of CSS+JS) is only needed once a result exists, so it's
+// fetched lazily on first use rather than blocking the initial page render.
+let leafletReady = null;
+function loadLeaflet() {
+  if (leafletReady) return leafletReady;
+  leafletReady = new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'vendor/leaflet/leaflet.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'vendor/leaflet/leaflet.js';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return leafletReady;
+}
+
+async function showMap(lat, lng, acc, geom, guess) {
+  await loadLeaflet();
   if (!map) {
     map = L.map('map', { attributionControl: false }).setView([lat, lng], 13);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -250,7 +270,7 @@ async function render(res, lat, lng, acc) {
 
   $('coords').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}  ±${Math.round(acc)} m`;
   $('result').hidden = false;
-  showMap(lat, lng, acc, w.g, guess);
+  await showMap(lat, lng, acc, w.g, guess);
 
   // Confidence: is the ward edge closer than the GPS error?
   const edge = w.g ? distToBoundary(lng, lat, w.g) : Infinity;
