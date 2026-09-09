@@ -216,7 +216,7 @@ footer p { margin: .35rem 0; }
   background: var(--card); border: 1px solid var(--line); border-radius: 999px;
   color: var(--muted); font-size: .78rem;
 }
-.visits strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.visits span { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .visits small { display: inline; opacity: .65; }
 .visits .dot {
   width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand);

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Uko Wapi? — Find Your Region, District, Ward &amp; Village in Tanzania</title>
-<meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji/mtaa ulipo. One tap to find your exact region, district, ward and village in Tanzania — free, no login, nothing sent to a server.">
+<title>Uko Wapi? — Region, District &amp; Ward Finder for Tanzania</title>
+<meta name="description" content="Bonyeza kitufe kimoja ujue mkoa, wilaya, kata na kijiji ulipo. One tap to find your region, district, ward and village in Tanzania — free, no server.">
 <link rel="canonical" href="https://ukowapi.site/">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -23,6 +23,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Uko Wapi">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="style.css">
 <script type="application/ld+json">
 {
@@ -45,14 +46,14 @@
 <body>
 <main>
   <header>
-    <h1>Uko wapi hasa?</h1>
+    <h1>Uko wapi hasa? <small>Mkoa, wilaya, kata na kijiji lako</small></h1>
     <p class="sub">Bonyeza kitufe, tutakuambia mkoa, wilaya, kata na kijiji/mtaa ulipo — ili usijaze taarifa zisizo sahihi.
       <span class="en">Tap the button and we'll tell you your region, district, ward and village — so you don't fill in the wrong details.</span></p>
   </header>
 
   <p class="visits" id="visits" hidden>
     <span class="dot" aria-hidden="true"></span>
-    Wageni waliotembelea: <strong id="visits-n">—</strong>
+    Wageni waliotembelea: <span id="visits-n">—</span>
     <small>visitors</small></p>
 
   <button id="locate" class="primary">
@@ -73,7 +74,7 @@
     <h2>You are outside Tanzania <small>Uko nje ya Tanzania</small></h2>
     <p>This tool only covers Tanzania — its region, district, ward and village data
       stops at the border, so it cannot tell you where you are from here.</p>
-    <p>If you are filling in a form for somewhere <strong>in</strong> Tanzania — for
+    <p>If you are filling in a form for somewhere in Tanzania — for
       family, or on someone's behalf — open <strong>“Tafuta mahali pengine / Look up
       another place”</strong> below and choose it by name.</p>
     <p class="sw">Zana hii inahusu Tanzania pekee. Kama unajaza fomu ya mahali fulani
@@ -156,7 +157,7 @@
       <dd><strong>Sensa ya Watu na Makazi ya mwaka 2022, Ofisi ya Taifa ya Takwimu
         (NBS)</strong> —
         <a href="https://www.nbs.go.tz/statistics/topic/gis" target="_blank" rel="noopener">shapefile rasmi ya kata</a>.
-        Mikoa <strong>31</strong>, halmashauri <strong>195</strong>,
+        Mikoa 31, halmashauri 195,
         kata/shehia <strong>4,344</strong>, kila moja na mpaka wake na msimbo rasmi.
         Kata <strong id="cov">—</strong> zina ramani.
         <br><strong class="age">Hii ndiyo seti mpya kabisa iliyochapishwa —
@@ -201,7 +202,7 @@
     <div class="quality">
       <p><strong>Kata zilizogawanywa baada ya 2022.</strong>
         Mkoa, halmashauri na kata sasa hutoka kwenye sensa ya 2022, hivyo halmashauri
-        mpya kama <strong>Ubungo</strong> na <strong>Kigamboni</strong> zinaonyeshwa
+        mpya kama <strong>Ubungo</strong> na Kigamboni zinaonyeshwa
         sawa. Lakini kata iliyoundwa au kugawanywa <em>baada ya</em> 2022 bado
         itaonyeshwa kwa jina la kata yake ya zamani, na ukurasa hauwezi kuligundua.
         <span class="en">Region, council and ward now come from the 2022 census, so
@@ -226,8 +227,8 @@
         <li>GPS ya simu ina hitilafu ya mita 5–50, na huwa mbaya zaidi ndani ya majengo.
           Ukiwa karibu na mpaka wa kata, jibu linaweza kuwa si sahihi — ukurasa
           hukuambia hilo ukitokea.</li>
-        <li><strong>Mipaka tuliyonayo ni ya sensa ya mwaka 2022 — takribani miaka
-          <span class="bnd-age">—</span> iliyopita.</strong> Hii ndiyo seti rasmi mpya
+        <li><strong>Mipaka tuliyonayo ni ya sensa ya mwaka 2022</strong> — takribani miaka
+          <span class="bnd-age">—</span> iliyopita. Hii ndiyo seti rasmi mpya
           kabisa iliyochapishwa na NBS. Kata iliyoanzishwa au kugawanywa baada ya 2022
           huenda ikaonyesha kata ya zamani, na ukurasa hauwezi kutambua hilo.</li>
         <li>Orodha yetu ya vijiji/mitaa ni ya zamani zaidi kuliko mipaka, na
@@ -262,7 +263,7 @@
     </details>
 
     <p class="contact">
-      Imetengenezwa na <strong>Tevin Mdendu</strong>
+      Imetengenezwa na Tevin Mdendu
       <span class="en">Built by Tevin Mdendu</span>
       <span class="links">
         <a href="https://www.linkedin.com/in/tevin-mdendu-314151313" target="_blank" rel="noopener">LinkedIn</a>
