@@ -436,6 +436,8 @@ async function locate() {
         } else {
           await render(res, lat, lng, acc);
           setStatus('');
+          btn.classList.add('success');
+          setTimeout(() => btn.classList.remove('success'), 500);
           // A fix this coarse is a network estimate, not GPS; offer the picker
           // alongside the result rather than leaving a shaky answer to stand.
           if (acc > 1500) {

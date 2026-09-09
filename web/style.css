@@ -132,8 +132,36 @@ button:disabled { opacity: .5; cursor: default; }
   width: .3rem; height: .3rem; background: currentColor;
   border-radius: 50%; transform: translate(-50%, -50%);
 }
-.primary.busy .pin { animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Searching: a radar-style ping expanding out from the pin, plus a gentle
+   pulse on the center dot. (A plain rotation would be invisible here — the
+   ring+dot is rotationally symmetric, so nothing would appear to move.) */
+.primary .pin::before {
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: 0;
+}
+.primary.busy .pin::before { animation: radar-ping 1.4s var(--ease-out) infinite; }
+.primary.busy .pin::after { animation: dot-pulse 1s ease-in-out infinite; }
+@keyframes radar-ping {
+  0% { transform: scale(.55); opacity: .7; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+/* A gentle breathing glow while the button is busy, so it reads as working
+   even at a glance, not just stalled. */
+.primary.busy {
+  animation: busy-breathe 1.8s ease-in-out infinite;
+}
+@keyframes busy-breathe {
+  0%, 100% { box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 18px 36px -14px var(--brand-shadow); }
+  50% { box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 22px 46px -10px var(--brand-shadow); }
+}
+/* A quick, satisfying pop the instant a result lands. */
+.primary.success { animation: success-pop .5s var(--ease-spring); }
+@keyframes success-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
 
 .ghost {
   flex: 1; padding: .75rem 1rem; background: var(--card);
