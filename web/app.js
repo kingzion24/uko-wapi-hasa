@@ -605,10 +605,15 @@ const COUNTER_HOST = 'https://abacus.jasoncameron.dev';
 const COUNTER_NS = 'uko-wapi-hasa';
 const COUNTER_KEY = 'visits';
 
+// Headless browsers and JS-rendering crawlers (Googlebot, Lighthouse, Puppeteer)
+// start with empty sessionStorage every time, so they would count on every visit.
+const IS_BOT = navigator.webdriver ||
+  /bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent);
+
 async function showVisits() {
-  let first = true;
+  let first = !IS_BOT;
   try {
-    first = !sessionStorage.getItem('counted');
+    first = first && !sessionStorage.getItem('counted');
   } catch { /* private mode: just read, don't count */ first = false; }
 
   try {
